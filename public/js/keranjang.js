@@ -2,6 +2,7 @@
 // Semua disimpan di localStorage supaya tetap ada walau halaman dimuat ulang.
 
 import { $, el, formatRupiah, hargaSetelahDiskon, salinDalam, tampilkanToast } from './util.js';
+import * as analitik from './analitik.js';
 
 const KUNCI_KERANJANG = 'tk_keranjang';
 const KUNCI_RIWAYAT = 'tk_riwayat';
@@ -76,8 +77,9 @@ export function tambahKeKeranjang(produk, tombol) {
 
   riwayat.push({ t: Date.now(), jenis: 'keranjang', id: produk.id, nama: produk.nama, kategori: produk.kategori, harga: produk.harga });
 
-  // Tim data minta konteks selengkap mungkin di setiap event.
-  window.Lacak.kirim('add_to_cart', { produk, keranjang, riwayat, sumber: konfig.sumber });
+  // Tim data minta konteks di setiap event: produk, isi keranjang, dan aktivitas terakhir. Riwayat utuh
+  // (9000 entri, 1,2 MB) tidak ikut dikirim: SDK menandatangani seluruh string JSON-nya (±400 ms).
+  analitik.kirim('add_to_cart', { produk: analitik.ringkasProduk(produk), keranjang, jumlahRiwayat: riwayat.length, riwayatTerakhir: riwayat.slice(-20), sumber: konfig.sumber });
 
   simpanKeranjang(keranjang);
   simpanRiwayat(riwayat);
@@ -97,7 +99,7 @@ export async function beliSekarang(produk, tombol) {
   const konfig = salinDalam(KONFIG);
   const riwayat = bacaRiwayat();
   riwayat.push({ t: Date.now(), jenis: 'beli', id: produk.id, nama: produk.nama, kategori: produk.kategori, harga: produk.harga });
-  window.Lacak.kirim('begin_checkout', { produk, riwayat, sumber: konfig.sumber });
+  analitik.kirim('begin_checkout', { produk: analitik.ringkasProduk(produk), jumlahRiwayat: riwayat.length, riwayatTerakhir: riwayat.slice(-20), sumber: konfig.sumber });
   simpanRiwayat(riwayat);
 
   const respons = await fetch('/api/pesanan', {
