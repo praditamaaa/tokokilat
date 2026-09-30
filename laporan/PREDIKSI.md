@@ -1,4 +1,4 @@
-Log prediksi
+# Log prediksi
 
 Aturan: satu entri per masalah. Bagian **Sebelum perbaikan** harus di-commit *sebelum* commit
 perbaikannya. Bagian **Sesudah perbaikan** diisi setelah pengukuran ulang. Jangan menyunting
@@ -36,10 +36,20 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
+- **Hash commit perbaikan:**
+- **Hasil ukur (median 3 kali):** dibanding kode awal. S0: permintaan gambar 3.000 → **8**, data gambar 3.228 → **9KB**, gambar terakhir selesai detik 146 → **22,1** (±sama dengan selesainya render kartu); halaman tenang (sesi)
+  441-477 → 25-26 detik. Long task saat memuat 14.402 → 19.391 ms (per ulangan 12,8-14,9 detik vs 13,3-19,6 detik).
+  S6: frame main thread 2,1 → 4,4 per detik, frame terburuk 592 → 345 ms, frame > 50 ms 20 → 43 per 10 detik, sibuk
+  96,8% → 99,8%. P-01 hanya diukur pada S0 dan S6 (ukur-semua.sh).
+- **Prediksi vs kenyataan:** Jumlah gambar (prediksi 6-10), data (< 15 KB), dan waktu tenang (≈ waktu render, ±20
+  detik) **sesuai**. Yang tidak kami prediksi: median long task saat memuat naik 35%. Variasi antar-ulangan di versi
+  yang sama besar (13,3 vs 19,6 detik), jadi kami tidak menganggapnya efek P-01, dan penyebabnya belum ditelusuri.
+  Di S6 frame kini lebih sering dan lebih pendek (dugaan kami: tidak ada lagi ribuan event `load` dan dokumen SVG
+  gambar yang diproses), tetapi masing-masing masih > 50 ms, sehingga jumlah frame lambat per 10 detik justru naik.
+  Ini contoh metrik jumlah frame lambat yang menyesatkan bila frame-nya jarang.
+- **Efek samping yang muncul:** CLS S0 naik dari 0 ke **0,137** di ketiga ulangan. Main thread tidak lagi tertahan
+  ribuan respons gambar, sehingga banner promo sempat tampil dan menggeser konten 218 px. Masalah ini sebelumnya
+  tersembunyi (lihat P-13). Kotak abu-abu saat mengibas cepat sesuai prediksi (lihat P-17).
 
 ## P-02: Kisi Membangun seluruh 3000 kartu dalam satu task
 
@@ -194,7 +204,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Hasil ukur (median 3 kali):** ....
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
-  =======
+  ==============================
 - **Hash commit perbaikan:** 387244c
 - **Hasil ukur (median 3 kali):** dibanding P-05, keduanya pengukuran pagi (`data/P-06-pagi`). S5 (roda mouse): frame > 50 ms 79,4 → 77,1 per 10 detik, frame
   main thread 12,0 → 12,9 per detik, layout paksa 576 → 435, long task 214 → 182 ms, waktu menggulir 10,3 → 10,4
@@ -207,14 +217,6 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
   (`getBoundingClientRect` semua kartu + `scrollY`) di setiap render.
 - **Efek samping yang muncul:** Pull-to-refresh kini dicegah di seluruh halaman lewat `overscroll-behavior-y`
   (sesuai prediksi). Impresi dikirim per batch IntersectionObserver (uji fungsional impresi lulus).
-
->>>>>>> 950e0f3894ffcd597572cdf34190fc0aed6f6bcd
->>>>>>>
->>>>>>
->>>>>
->>>>
->>>
->>
 
 ## P-08: SDK analitik dipanggil di tengah interaksi, dengan payload riwayat 1,2 MB
 
@@ -250,6 +252,60 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - INP S2 ±200-300 ms: menunjukkan lebih baik daripada prediksi (128 ms). Sisa `JSON.parse`/`stringify`/`setItem` riwayat (P-09) ternyata lebih murah daripada perkiraan, yang diukur saat baterai. S1 lebih ringan per huruf: arah sesuai, tetapi di dalam variasi. S5 turun karena tidak ada lagi SDK di callback gulir: sesuai. Dengan 4 frame > 50 ms per 10 detik, S5 pada versi ini hampir mencapai target (≤ 2).
 - **Efek samping yang muncul:**
 - Event tiba 0-3 detik lebih lambat, dan ketujuh jenis event tetap terkirim (uji fungsional).pengukuran pagi untuk commit yang sama (`data/P-08-pagi`) memberi S5 79-89 frame > 50 ms per 10 detik, 20 kali lipat pengukuran malam. Perbedaan ini bukan efek P-08, melainkan kondisi mesin (Catatan metode). Sehingga perbandingan S5 hanya sah di dalam satu jendela pengukuran
+
+## P-09: "+ Keranjang" baru memberi umpan balik setelah riwayat 1,2 MB dibaca dan ditulis ulang
+
+**Tiket terkait:** TK-1044 (utama), TK-1052
+**Tanggal dan hash commit entri ini:** 25-09-2026, hash dicatat di bagian "Sesudah"
+
+### Sebelum perbaikan
+
+- **Yang teramati:** micro-benchmark CPU 4x (`uji-dugaan.mjs`) untuk riwayat contoh 9000 entri (1.228.471 byte):
+  `JSON.parse` **79 ms**, `JSON.stringify` **42 ms**, `localStorage.setItem` **41 ms**. Di kode awal, handler
+  "+ Keranjang" juga memanggil SDK dengan payload itu (±400 ms, dipindahkan P-08). Pengukuran awal setelah P-02
+  (laptop masih memakai baterai): INP S2 **488 ms**, dengan teks "Ditambahkan ✓" baru muncul 485 ms setelah
+  ketukan.
+- **Dugaan mekanisme:** urutan kerja di `tambahKeKeranjang` adalah baca keranjang → **parse seluruh riwayat** →
+  (SDK) → simpan keranjang → **stringify + tulis seluruh riwayat** → baru perbarui lencana, tombol, dan toast.
+  Semua dalam satu task klik. Browser baru bisa menggambar umpan balik (rendering opportunity berikutnya)
+  setelah task selesai, jadi selama ±160 ms (plus SDK di kode awal) tombol terlihat tidak bereaksi. Pengguna
+  menekan lagi, dan setiap tekanan yang antre menambah isi keranjang (TK-1044: "tahu-tahu isi keranjang sudah 3").
+  Riwayat 1,2 MB ditulis ulang utuh hanya untuk menambah satu entri.
+- **Rencana perubahan:**
+  - Umpan balik lebih dulu. Keranjang (beberapa item, kecil) tetap dibaca/ditulis sinkron supaya data aman,
+    lalu lencana, tombol "Ditambahkan ✓", dan toast diperbarui di task yang sama.
+  - Riwayat: entri baru ditampung di memori lalu disimpan di waktu senggang (`requestIdleCallback`) **tanpa
+    parse/stringify seluruh riwayat**. Teks entri baru disisipkan sebelum `]` pada string JSON yang tersimpan,
+    sehingga format di `localStorage` tetap array JSON yang sama dan dibaca tim rekomendasi apa adanya. Penyimpanan
+    juga dipaksa saat `pagehide`/`visibilitychange: hidden`.
+  - Konteks analitik memakai hingga 20 aktivitas sesi ini dari memori. `jumlahRiwayat` dihapus karena
+    menghitungnya butuh parse 1,2 MB.
+- **Prediksi terukur:**
+  - S2: task klik hanya berisi kerja keranjang kecil dan pembaruan DOM (±5-15 ms pada CPU 4x). INP S2 turun
+    menjadi **< 100 ms**, dan umpan balik tombol (mutasi DOM) terjadi **< 30 ms** setelah ketukan.
+  - Di waktu senggang muncul satu task ±45-60 ms (getItem + sambung string + `setItem` 1,2 MB), di luar
+    interaksi. Task ini tetap harus < 100 ms.
+  - Efek samping: bila browser crash sebelum waktu senggang tiba, entri riwayat yang tertunda hilang (bukan isi
+    keranjang). `pagehide` menutup kasus navigasi/tutup tab biasa. Bila string riwayat rusak (tidak berakhir `]`),
+    kode kembali ke jalur lama (parse + push) supaya tidak menulis JSON rusak.
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  - Hanya menukar urutan (UI dulu, lalu simpan sinkron di task yang sama): tidak menolong, karena browser tetap
+    tidak menggambar sebelum task selesai.
+  - `setTimeout(0)` untuk penyimpanan: task berikutnya bisa jatuh sebelum frame dan tetap menunda umpan balik.
+  - IndexedDB (tambah per entri, asinkron): paling efisien, tetapi mengubah tempat penyimpanan yang dibaca tim
+    rekomendasi (`localStorage['tk_riwayat']`) dan butuh migrasi.
+  - Membatasi riwayat misalnya 500 entri terakhir: tulisan jadi kecil, tetapi menghapus data milik tim lain
+    (keputusan bisnis, bukan keputusan performa).
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** 
+- **Hasil ukur (median 3 kali):** 
+- **Prediksi vs kenyataan:** 
+- **Efek samping yang muncul:** 
+
+---
+
 
 ## P-15: Setiap frame gulir menghitung ulang style dan layout kartu yang tidak terlihat
 
@@ -352,3 +408,18 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Hasil ukur (median 3 kali):**
 - **Prediksi vs kenyataan:**
 - **Efek samping yang muncul:**
+- **Hash commit perbaikan:** `78fb2c2` (entri prediksi ini di-commit lebih dulu: `6e06968`)
+- **Hasil ukur (median 3 kali):** dibanding kode awal. S0: permintaan gambar 3.000 → **8**, data gambar 3.228 → **9
+  KB**, gambar terakhir selesai detik 146 → **22,1** (±sama dengan selesainya render kartu); halaman tenang (sesi)
+  441-477 → 25-26 detik. Long task saat memuat 14.402 → 19.391 ms (per ulangan 12,8-14,9 detik vs 13,3-19,6 detik).
+  S6: frame main thread 2,1 → 4,4 per detik, frame terburuk 592 → 345 ms, frame > 50 ms 20 → 43 per 10 detik, sibuk
+  96,8% → 99,8%. P-01 hanya diukur pada S0 dan S6 (ukur-semua.sh).
+- **Prediksi vs kenyataan:** Jumlah gambar (prediksi 6-10), data (< 15 KB), dan waktu tenang (≈ waktu render, ±20
+  detik) **sesuai**. Yang tidak kami prediksi: median long task saat memuat naik 35%. Variasi antar-ulangan di versi
+  yang sama besar (13,3 vs 19,6 detik), jadi kami tidak menganggapnya efek P-01, dan penyebabnya belum ditelusuri.
+  Di S6 frame kini lebih sering dan lebih pendek (dugaan kami: tidak ada lagi ribuan event `load` dan dokumen SVG
+  gambar yang diproses), tetapi masing-masing masih > 50 ms, sehingga jumlah frame lambat per 10 detik justru naik.
+  Ini contoh metrik jumlah frame lambat yang menyesatkan bila frame-nya jarang.
+- **Efek samping yang muncul:** CLS S0 naik dari 0 ke **0,137** di ketiga ulangan. Main thread tidak lagi tertahan
+  ribuan respons gambar, sehingga banner promo sempat tampil dan menggeser konten 218 px. Masalah ini sebelumnya
+  tersembunyi (lihat P-13). Kotak abu-abu saat mengibas cepat sesuai prediksi (lihat P-17).
