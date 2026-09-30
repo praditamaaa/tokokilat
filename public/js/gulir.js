@@ -18,21 +18,11 @@ function kartuMasukLayar(entri) {
     kartu.classList.add('terlihat');
     pengamatKartu.unobserve(kartu);
     if (!sudahTercatat.has(kartu.dataset.id)) {
-  for (const e of entri) {
-    if (!e.isIntersecting) continue;
-    const kartu = e.target;
-    kartu.classList.add('terlihat');
-    pengamatKartu.unobserve(kartu);
-    if (!sudahTercatat.has(kartu.dataset.id)) {
       sudahTercatat.add(kartu.dataset.id);
       impresiBaru.push(kartu.dataset.id);
     }
   }
   if (impresiBaru.length) catatImpresi(impresiBaru);
-}
-
-export function amatiKartu(kartu) {
-  pengamatKartu.observe(kartu);
 }
 
 export function amatiKartu(kartu) {
@@ -81,6 +71,4 @@ export function pasangGulir() {
   // yang membuat setiap gerakan jari menunggu main thread.
 
   $('#ke-atas').addEventListener('click', () => window.scrollTo({ top: 0 }));
-}
-}
 }
