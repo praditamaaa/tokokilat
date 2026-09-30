@@ -1,3 +1,5 @@
+Sebelum perbaikan
+
 # Log prediksi
 
 Aturan: satu entri per masalah. Bagian **Sebelum perbaikan** harus di-commit *sebelum* commit
@@ -6,20 +8,33 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ---
 
-## P-01: [judul singkat masalah]
+## P-01: 3000 gambar diminta sekaligus dan tanpa ukuran
 
-**Tiket terkait:** TK-....
-**Tanggal dan hash commit entri ini:** ....
+**Tiket terkait:** TK-1081 (utama), TK-1078, TK-1070
+**Tanggal dan hash commit entri ini:** 30/09/2026
 
 ### Sebelum perbaikan
 
-- **Yang teramati di trace (baseline):** durasi, di track apa, fungsi apa yang dominan di bottom-up.
-- **Dugaan mekanisme:** jelaskan memakai istilah event loop (task, microtask, rendering opportunity)
-  atau tahap pipeline (JS, Style, Layout, Paint, Composite).
-- **Rencana perubahan:** ....
-- **Prediksi terukur:** "Setelah perubahan, [metrik] turun dari ... menjadi sekitar ..., karena ...".
-  Sertakan juga prediksi efek samping: apa yang mungkin menjadi *lebih buruk*?
-- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:** ....
+- **Yang teramati di trace (baseline):**
+
+  - S0 (3 ulangan): dalam 10 detik pertama **0** permintaan gambar, karena main thread masih membangun kartu. Setelah task render selesai, **3000** permintaan `/img/p/*.svg` dikirim sekaligus. Pada ulangan 1 gambar terakhir baru selesai di detik **207** (3.228 KB). Pada ulangan 2 dan 3, setelah 250 detik baru 2.158 dan
+    2.050 gambar yang selesai.
+  - Trace pemuatan `diagnosis-muat-awal-4x-sebelum.json.gz`: task render awal sudah berjalan > 20 detik saat rekaman berhenti (bottom-up: `buatKartu` total 19.098 ms). Laju gambar selesai yang tercatat di sisi renderer turun dari ±25/detik menjadi ±3/detik setelah menit ke-4, karena setiap respons perlu main thread yang sedang penuh (event `load`, parse dokumen SVG).
+- **Dugaan mekanisme:** `buatKartu` membuat `<img>` tanpa atribut `loading`, sehingga setiap gambar mulai diunduh begitu `src` diisi, termasuk kartu ke-3000 yang jauh di luar layar. Browser membuka paling banyak 6 koneksi HTTP/1.1 per origin, jadi 3000 permintaan mengantre dalam urutan dokumen. Gambar yang kebetulan sedang dilihat pengguna tidak didahulukan, sehingga saat menggulir cepat pengguna menunggu di belakang antrean (kotak abu-abu). Semua gambar tetap diunduh walau tidak pernah dilihat (kuota). Gambar juga tidak punya `width`/`height`, jadi tingginya 0 sampai berkasnya tiba. Setiap gambar yang tiba mengubah tinggi kartu, lalu tinggi baris grid, sehingga layout kisi harus dihitung ulang (tahap Layout) dan konten di bawahnya bergeser. Server tidak lambat: latensi per gambar hanya 60-300 ms. Yang lambat adalah
+  antrean yang diciptakan klien.
+- **Rencana perubahan:** di `buatKartu`, isi `width=480 height=480` (ukuran asli SVG) supaya browser menghitung rasio aspek sebelum gambar tiba, `loading="lazy"` (diisi sebelum `src`), dan `decoding="async"`.
+- **Prediksi terukur:**
+
+  - S0: jumlah permintaan gambar setelah kartu tampil turun dari **3000** menjadi hanya kartu yang berada dalam
+    jarak lazy-load Chrome (viewport + 1250 px untuk koneksi cepat). Kartu pertama mulai di y ≈ 844 dengan tinggi
+    ±440 px dan 2 kolom, jadi sekitar **6-10 gambar**. Data gambar turun dari ±3.200 KB menjadi **< 15 KB**.
+  - Waktu sampai halaman "tenang" (tidak ada gambar tertunda) turun dari > 200 detik menjadi hampir sama dengan waktu render kartu. Render 3000 kartu sendiri masih ±20 detik pada CPU 4x.
+  - Efek samping yang mungkin memburuk: saat menggulir sangat cepat, kotak abu-abu tetap muncul sebentar karena gambar baru diminta saat mendekati layar. Antreannya pendek, jadi seharusnya cepat terisi. Karena ukuran kini dipesan, kotak abu-abu tidak lagi "melompat" saat gambar tiba.
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+
+  - IntersectionObserver buatan sendiri untuk memuat gambar: hasilnya sama dengan `loading="lazy"` bawaan, tetapi kodenya lebih banyak dan tidak bisa memanfaatkan ambang jarak yang disesuaikan browser dengan kondisi jaringan.
+  - Placeholder buram (LQIP), sprite, atau HTTP/2: butuh perubahan server/CDN, yang di luar ruang lingkup.
+  - Hanya menambah `width`/`height` tanpa lazy: layout ulang hilang, tetapi 3000 permintaan dan boros kuota tetap ada
 
 ### Sesudah perbaikan
 
@@ -89,7 +104,6 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Hasil ukur (median 3 kali):** ....
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
-
 
 ## P-05: Pencarian menormalkan ulang teks 3000 produk di setiap huruf
 
@@ -179,8 +193,6 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
 
-
-
 ## P-08: SDK analitik dipanggil di tengah interaksi, dengan payload riwayat 1,2 MB
 
 **Tiket terkait:** TK-1044, TK-1052, TK-1041, TK-1063
@@ -205,8 +217,6 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - `setTimeout(0)` setelah umpan balik: memindahkan biaya keluar dari task klik, tetapi task berikutnya tetap bisa menahan input atau frame berikutnya. Waktu senggang lebih tepat untuk kerja yang tidak mendesak.
 - `scheduler.postTask({ priority: 'background' })`: bagus, tetapi belum ada di semua browser target (Safari).
 
-
-
 ### Sesudah perbaikan
 
 - **Hash commit perbaikan:**
@@ -217,3 +227,107 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - INP S2 ±200-300 ms: menunjukkan lebih baik daripada prediksi (128 ms). Sisa `JSON.parse`/`stringify`/`setItem` riwayat (P-09) ternyata lebih murah daripada perkiraan, yang diukur saat baterai. S1 lebih ringan per huruf: arah sesuai, tetapi di dalam variasi. S5 turun karena tidak ada lagi SDK di callback gulir: sesuai. Dengan 4 frame > 50 ms per 10 detik, S5 pada versi ini hampir mencapai target (≤ 2).
 - **Efek samping yang muncul:**
 - Event tiba 0-3 detik lebih lambat, dan ketujuh jenis event tetap terkirim (uji fungsional).pengukuran pagi untuk commit yang sama (`data/P-08-pagi`) memberi S5 79-89 frame > 50 ms per 10 detik, 20 kali lipat pengukuran malam. Perbedaan ini bukan efek P-08, melainkan kondisi mesin (Catatan metode). Sehingga perbandingan S5 hanya sah di dalam satu jendela pengukuran
+
+
+
+## P-15: Setiap frame gulir menghitung ulang style dan layout kartu yang tidak terlihat
+
+**Tiket terkait:** TK-1063
+**Tanggal dan hash commit entri ini:** 26-09-2026, hash dicatat di bagian "Sesudah"
+
+### Sebelum perbaikan
+
+- **Yang teramati:** pengukuran awal commit P-13 (satu ulangan, laptop masih memakai baterai), S5 usapan 10 detik
+  (±28.000 px): **80 frame > 50 ms per 10 detik**, main thread sibuk 89-92%. Trace
+  `diagnosis-S5-invalidasi-setelah-P-13.json.gz` (dengan kategori `invalidationTracking`):
+  - 102 task frame gulir, rata-rata **45,7 ms** (Paint 981 ms, Layout 943 ms, Recalculate Style 776 ms,
+    Pre-paint 551 ms, Layerize 380 ms dalam 10 detik);
+  - 99 task pembuatan dokumen SVG gambar, **1.977 ms**;
+  - invalidasi style karena `Animation` pada `span.lencana-kilat` dan `::after`-nya **660 kali** (hampir setiap
+    frame), `Animation` pada `article.kartu.terlihat` 408 kali;
+  - invalidasi layout `Style changed` pada `article.kartu.terlihat` 68 kali, dipicu pemberian kelas `terlihat`.
+- **Dugaan mekanisme:**
+  1. Animasi lencana memang dijalankan compositor, tetapi setiap kali main thread menghasilkan frame (saat gulir,
+     dan juga karena loop rAF alat ukur), Blink tetap memperbarui style elemen yang beranimasi. Ini berlaku untuk
+     semua lencana di DOM, termasuk yang jauh di luar layar. Makin jauh digulir, makin banyak kartu (dan
+     lencana) di DOM, dan makin mahal setiap Layout/Pre-paint.
+  2. Kartu yang belum terlihat memakai `transform: translateY(16px)`, sedangkan `.terlihat` memakai
+     `transform: none`. Berpindah antara "ada transform" dan "tanpa transform" mengubah stacking context/containing
+     block, sehingga Blink menjadwalkan Layout, bukan hanya Composite.
+  3. Setiap gambar SVG yang tiba membuat dokumen SVG sendiri di main thread. Ini harga dari format gambar CDN yang
+     tidak bisa diubah dari sisi klien. Jumlahnya ditekan oleh lazy-load, tetapi tidak bisa nol saat menggulir.
+- **Rencana perubahan:**
+  - `.kartu { content-visibility: auto; contain-intrinsic-size: auto 440px; }`. Kartu di luar jangkauan layar
+    dilewati browser untuk Style, Layout, dan Paint (termasuk animasi lencana di dalamnya). Ukuran tempatnya
+    diingat (`auto`), jadi tinggi daftar tetap.
+  - `.kartu.terlihat { transform: translateY(0) }` (bukan `none`), supaya memunculkan kartu hanya mengubah nilai
+    transform yang dijalankan compositor, tanpa Layout.
+- **Prediksi terukur:**
+  - S5: rata-rata biaya frame gulir turun ±30-40% dan frame > 50 ms turun dari ±80 menjadi **±35-50 per 10 detik**.
+    Target ≤ 2 **kemungkinan besar belum tercapai** pada CPU 4x dengan usapan secepat ini, karena ±100 dokumen SVG
+    (±2 detik main thread) dan paint konten baru tetap ada. Sisanya perlu perubahan di CDN (lihat rekomendasi).
+  - S6 (dengan alat ukur): Recalculate Style per frame turun karena lencana di luar layar tidak lagi diperbarui.
+  - Efek samping: kartu yang belum pernah dirender memakai tinggi perkiraan 440 px sampai mendekati layar
+    (perubahan kecil terjadi di luar layar, jadi tidak terlihat sebagai pergeseran). Posisi scrollbar bisa bergeser
+    sedikit saat ukuran sebenarnya menggantikan perkiraan.
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  - Virtualisasi penuh (membuang kartu yang jauh dari layar): DOM tetap kecil, tetapi kartu yang dibuang harus
+    dibuat ulang saat kembali (termasuk gambar SVG-nya), dan fokus keyboard/pembaca layar lebih sulit dijaga.
+  - Menjeda animasi lencana lewat IntersectionObserver per kartu: menghentikan animasi di luar layar, tetapi tidak
+    mengurangi biaya Layout/Paint kartu di luar layar. `content-visibility` mencakup keduanya.
+  - Menghapus efek kartu muncul saat menggulir cepat: melanggar aturan 4 (efek kartu muncul harus tetap ada).
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:**
+- **Hasil ukur (median 3 kali):**
+- **Prediksi vs kenyataan:** 
+- **Efek samping yang muncul:** 
+
+## P-17: Gambar dimuat dan digambar di tengah guliran cepat
+
+**Tiket terkait:** TK-1063, TK-1081
+**Tanggal dan hash commit entri ini:** 30/09/2026
+
+### Sebelum perbaikan
+
+- - **Yang teramati:** commit P-15, laptop sudah tersambung listrik, pengukuran awal: S5 **82-91 frame > 50 ms per
+    10 detik**, main thread sibuk ±88-92%, jarak gulir ±28.800 px. Trace S5: 141 task frame gulir (4,7 detik, rata-rata
+    33 ms) dan **96 task dokumen SVG gambar (1,56 detik)**, ditambah PaintImage ±0,2 detik. Eksperimen A/B dengan
+    dekorasi `.kaki-hias` (blur 60 px + box-shadow besar) dimatikan: S5 turun ke ±60 frame > 50 ms. Karena daftar
+    kini pendek, kaki halaman selalu berada di dalam area yang direkam ulang (±4.000 px) setiap kali kartu baru
+    ditambahkan.
+- **Dugaan mekanisme:** selama pengguna mengibaskan daftar, ±13 kartu per detik masuk ke jarak lazy-load. Setiap
+  gambar yang tiba membuat dan menata dokumen SVG di main thread (±20 ms pada CPU 4x), lalu harus direkam
+  (PaintImage). Kerja ini mengisi celah antar-frame, sehingga frame gulir berikutnya terlambat. Hampir semua gambar
+  itu sudah lewat dari layar sebelum sempat dilihat. Dekorasi kaki halaman ikut direkam ulang ketika posisinya
+  bergeser karena batch kartu baru.
+- **Rencana perubahan:**
+
+  - Modul `gambar.js` mengambil alih pemasangan `src`: gambar didaftarkan ke IntersectionObserver
+    (rootMargin 800 px) dan alamatnya baru dipasang saat dekat layar **dan** halaman "tenang". Tidak tenang berarti
+    guliran lebih cepat dari 1,5 px/ms (diukur di callback rAF gulir yang sudah ada) dalam 150 ms terakhir, atau
+    ada render pencarian dalam 350 ms terakhir (mekanisme P-14 disatukan ke sini).
+  - `.kaki-hias` diberi `will-change: transform` supaya menjadi layer komposit sendiri: digambar sekali, lalu hanya
+    dipindahkan compositor.
+- **Prediksi terukur:**
+
+  - S5: dokumen SVG yang dibuat selama usapan turun dari ±96 menjadi hanya gambar di sela usapan yang melambat.
+    Frame > 50 ms turun dari ±80-90 menjadi **±25-45 per 10 detik**, dan main thread sibuk turun ke ±65-75%. Target
+    ≤ 2 **belum tercapai**, karena frame gulir sendiri (Layout/Paint kartu baru, ±33 ms pada CPU 4x) tetap melebihi
+    anggaran 16,7 ms per frame.
+  - Efek samping: saat mengibas cepat, kotak gambar tetap abu-abu dan baru terisi ±150 ms setelah guliran melambat
+    (ini pertukaran yang disengaja; kotak sudah berukuran tetap sejak P-01). Ada satu layer komposit tambahan untuk
+    dekorasi kaki (memori GPU kecil).
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+
+  - Menghapus dekorasi blur kaki halaman: lebih hemat lagi, tetapi mengubah desain tanpa perlu.
+  - Menyuruh CDN mengirim gambar raster kecil (WebP 200 px) alih-alih SVG: solusi paling tepat untuk biaya
+    dokumen SVG, tetapi server/CDN di luar ruang lingkup (masuk rekomendasi).
+  - Menurunkan jarak lazy-load: tidak mengurangi jumlah gambar yang lewat saat dikibas, hanya menunda sedikit.
+
+  ### Sesudah perbaikan
+- **Hash commit perbaikan:**
+- **Hasil ukur (median 3 kali):**
+- **Prediksi vs kenyataan:**
+- **Efek samping yang muncul:**
