@@ -15,9 +15,43 @@ function normalkan(teks) {
     .trim();
 }
 
-function cocok(produk, kunci) {
-  const teks = normalkan(produk.nama + ' ' + produk.merek + ' ' + produk.kategori + ' ' + produk.kota);
-  return kunci.split(' ').every((k) => teks.includes(k));
+// Teks pencarian tiap produk tidak pernah berubah, jadi dinormalkan sekali saja lalu disimpan.
+// Sebelumnya normalize('NFD') + dua regex dijalankan untuk 3000 produk di setiap huruf yang diketik.
+const teksCari = new Map(); // id produk -> teks yang sudah dinormalkan
+
+function teksProduk(produk) {
+  let teks = teksCari.get(produk.id);
+  if (teks === undefined) {
+    teks = normalkan(produk.nama + ' ' + produk.merek + ' ' + produk.kategori + ' ' + produk.kota);
+    teksCari.set(produk.id, teks);
+  }
+  return teks;
+}
+
+function cocok(produk, kata) {
+  const teks = teksProduk(produk);
+  return kata.every((k) => teks.includes(k));
+}
+
+const PEMBANDING = {
+  murah: (a, b) => hargaSetelahDiskon(a) - hargaSetelahDiskon(b),
+  mahal: (a, b) => hargaSetelahDiskon(b) - hargaSetelahDiskon(a),
+  laris: (a, b) => b.terjual - a.terjual,
+  rating: (a, b) => b.rating - a.rating || b.terjual - a.terjual,
+};
+
+export function terapkanSaringan() {
+  const kunci = normalkan(saringan.kata);
+  const kata = kunci.split(' ');
+  let hasil = keadaan.semuaProduk.filter((p) => {
+    if (saringan.kategori !== 'Semua' && p.kategori !== saringan.kategori) return false;
+    if (kunci && !cocok(p, kata)) return false;
+    return true;
+  });
+  if (PEMBANDING[saringan.urut]) hasil = hasil.slice().sort(PEMBANDING[saringan.urut]);
+  renderProduk(hasil);
+
+  if (window.Lacak && kunci) window.Lacak.kirim('search', { kata: saringan.kata, jumlah: hasil.length });
 }
 
 const PEMBANDING = {

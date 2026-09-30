@@ -3,6 +3,7 @@
 
 import { $, hargaSetelahDiskon, tampilkanToast } from './util.js';
 import { keadaan, perbaruiHargaVoucherDiKartu } from './katalog.js';
+import * as analitik from './analitik.js';
 
 const VOUCHER = {
   KILAT1212: { persen: 12, maksPotongan: 120000, minBelanja: 50000 },
@@ -69,7 +70,7 @@ async function terapkanVoucher(kode) {
   perbaruiHargaVoucherDiKartu();
   progres.hidden = true;
   tampilkanToast('Voucher ' + kode + ' dipakai di ' + keadaan.hargaVoucher.size.toLocaleString('id-ID') + ' produk.');
-  if (window.Lacak) window.Lacak.kirim('apply_voucher', { kode, jumlah: keadaan.hargaVoucher.size });
+  analitik.kirim('apply_voucher', { kode, jumlah: keadaan.hargaVoucher.size });
 }
 
 export function pasangVoucher() {

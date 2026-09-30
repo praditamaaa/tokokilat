@@ -1,6 +1,4 @@
-Sebelum perbaikan
-
-# Log prediksi
+Log prediksi
 
 Aturan: satu entri per masalah. Bagian **Sebelum perbaikan** harus di-commit *sebelum* commit
 perbaikannya. Bagian **Sesudah perbaikan** diisi setelah pengukuran ulang. Jangan menyunting
@@ -131,17 +129,19 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
+- **Hash commit perbaikan:** 8093ee1
+- **Hasil ukur (median 3 kali):** Long task S1 321 → 242 ms. Micro-benchmark penyaringan "sepatu" (CPU 4x): 28,4 → 1,9 ms.
+- **Prediksi vs kenyataan:** Prediksi dampak kecil (±25 ms per ketikan) **sesuai arah**. Median INP turun 120 ms, sebagian besar penurunan itu variasi. Sesuai dugaan, ini bukan
+  penyebab utama.
+- **Efek samping yang muncul:** Tidak terlihat. Uji fungsional pencarian (jumlah hasil benar, kartu yang tampil
+  memang cocok, pesan kosong) lulus. Memori tambahan ±3000 string tidak diukur.
 
 ---
 
 ## P-06: `periksaGulir` di setiap scroll/touchmove/wheel dan listener sentuh non-pasif
 
 **Tiket terkait:** TK-1063 (utama), TK-1057 ("mau scroll juga tidak bisa"), TK-1041
-**Tanggal dan hash commit entri ini:** 39-09-2026, hash dicatat di bagian "Sesudah"
+**Tanggal dan hash commit entri ini:** 30-09-2026, hash dicatat di bagian "Sesudah"
 
 ### Sebelum perbaikan
 
@@ -188,10 +188,33 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
+<<<<<<< HEAD
+
 - **Hash commit perbaikan:** ....
 - **Hasil ukur (median 3 kali):** ....
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
+  =======
+- **Hash commit perbaikan:** 387244c
+- **Hasil ukur (median 3 kali):** dibanding P-05, keduanya pengukuran pagi (`data/P-06-pagi`). S5 (roda mouse): frame > 50 ms 79,4 → 77,1 per 10 detik, frame
+  main thread 12,0 → 12,9 per detik, layout paksa 576 → 435, long task 214 → 182 ms, waktu menggulir 10,3 → 10,4
+  detik. INP S1 432 → **208 ms** (ulangan 200-976), long task S1 242 → 166 ms.
+- **Prediksi vs kenyataan:** Frame lambat S5 turun ke 10-20: **meleset**, praktis tidak berubah. Ada dua sebab.
+  Pertama, prediksi dibuat dari pengukuran eksplorasi dengan metrik frame lain (PrePaint, lihat Catatan metode) dan
+  sebelum Chrome dikunci ke P-core. Kedua, layout paksa dari `gulir.js` memang hilang, tetapi sisa 435 layout paksa
+  berasal dari timer 10 ms (`offsetWidth`), S5 memakai roda mouse, sehingga efek listener `touchmove` non-pasif
+  tidak terukur langsung. Yang tidak terduga: INP S1 turun ke 208 ms, karena `renderProduk` memanggil `periksaGulir`
+  (`getBoundingClientRect` semua kartu + `scrollY`) di setiap render.
+- **Efek samping yang muncul:** Pull-to-refresh kini dicegah di seluruh halaman lewat `overscroll-behavior-y`
+  (sesuai prediksi). Impresi dikirim per batch IntersectionObserver (uji fungsional impresi lulus).
+
+>>>>>>> 950e0f3894ffcd597572cdf34190fc0aed6f6bcd
+>>>>>>>
+>>>>>>
+>>>>>
+>>>>
+>>>
+>>
 
 ## P-08: SDK analitik dipanggil di tengah interaksi, dengan payload riwayat 1,2 MB
 
@@ -227,8 +250,6 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - INP S2 ±200-300 ms: menunjukkan lebih baik daripada prediksi (128 ms). Sisa `JSON.parse`/`stringify`/`setItem` riwayat (P-09) ternyata lebih murah daripada perkiraan, yang diukur saat baterai. S1 lebih ringan per huruf: arah sesuai, tetapi di dalam variasi. S5 turun karena tidak ada lagi SDK di callback gulir: sesuai. Dengan 4 frame > 50 ms per 10 detik, S5 pada versi ini hampir mencapai target (≤ 2).
 - **Efek samping yang muncul:**
 - Event tiba 0-3 detik lebih lambat, dan ketujuh jenis event tetap terkirim (uji fungsional).pengukuran pagi untuk commit yang sama (`data/P-08-pagi`) memberi S5 79-89 frame > 50 ms per 10 detik, 20 kali lipat pengukuran malam. Perbedaan ini bukan efek P-08, melainkan kondisi mesin (Catatan metode). Sehingga perbandingan S5 hanya sah di dalam satu jendela pengukuran
-
-
 
 ## P-15: Setiap frame gulir menghitung ulang style dan layout kartu yang tidak terlihat
 
@@ -281,8 +302,8 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 - **Hash commit perbaikan:**
 - **Hasil ukur (median 3 kali):**
-- **Prediksi vs kenyataan:** 
-- **Efek samping yang muncul:** 
+- **Prediksi vs kenyataan:**
+- **Efek samping yang muncul:**
 
 ## P-17: Gambar dimuat dan digambar di tengah guliran cepat
 
