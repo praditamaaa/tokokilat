@@ -61,6 +61,35 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
 
+## P-03: Pemformat angka dibuat ulang disetiap panggilan
+
+**Tiket terkait:** TK-1041, TK-1057 (render setelah voucher), TK-1081 (render awal)
+
+**Tanggal dan hash commit entri ini:** ....
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):** di task awal 88 detik, 'formatRupiah' memakan 9.710 ms self dan 'formatRibuan' memakan 1.868 ms self Micro-benchmark CPU 4x
+- **Dugaan mekanisme:** 'formatRupiah' memanggil 'new Intl.NumberFormat ('id-ID', {...}') di setiap panggilan. Konstruktor melakukan negosiasi locale, membaca data ICU, dan membangun objek performat. Hasilnya dibuang setelah satu kali 'format()', 'Number.prototype.toLocaleString('id-ID')' (rating,jumlah terjual, ringkasan) juga membuat performa baru setiap kali. Semuanya kerja Javascrip sinkron di dalam task render, jadi memperpanjang task yang memproses setiap ketikan (tahap JS pada pipeline, sebelum Style/Layout)
+- **Rencana perubahan:** pada 'util.js' membuat dua performat sekali saat rupiah dan angka biasa. 'formatRupiah', 'formatRibuan', dan fungsi baru 'formatAngka' memakai performat itu. Semua 'toLocaleString('id-ID')' di kode aplikasi diganti 'formatAngka'. Kesetaraan keluaran diuji menghasilkan teks identik.
+- **Prediksi terukur:**
+
+1. BIaya pemformatan perkartu turun dari -+ 1,3 ms menjadi -+0,01 ms (CPU 4x). Per render 24 kartu, sekitar 60-100 ms hilang dari task ketikan S1 dan dari task render awal S0.
+2. Belum Cukup membawa INP S1 ke bawah 200 ms, karena yang dominan setelah P-02 adalah layout paksanya 'samakanTinggiJudul' yang memakan waktu -+3,2 detik per skenario, P-04.
+3. Efek samping yang mungkin terjadi adalah biaya dari inisialisasi ICU (selama -+ 190 ms) pindah ke saat modul 'util.js' dievaluasi. Waktu totalnya sama, hanya terjadi lebih awal sebelum produk tiba.
+
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+
+1. Memformat angka secara manual dengan regex pemisah ribuan memang lebih cepat tetapi rawan salah locate dan karena mata uangnya. Keuntungannya kecil dibanding pemformat yang disimpan.
+2. Memoisasi string per nilai harga (Map) dapat menambah memori string dan kompleksitas, sedangkan 'format()' pada performat tersimpan sudah -+ 5 microsecond.
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** ....
+- **Hasil ukur (median 3 kali):** ....
+- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
+- **Efek samping yang muncul:** ....
+
 ## P-08: SDK analitik dipanggil di tengah interaksi, dengan payload riwayat 1,2 MB
 
 **Tiket terkait:** TK-1044, TK-1052, TK-1041, TK-1063
