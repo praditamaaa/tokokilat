@@ -3,6 +3,7 @@
 
 import { $ } from './util.js';
 import { catatImpresi } from './analitik.js';
+import { tahanGambar } from './gambar.js';
 
 const sudahTercatat = new Set();
 let pengamatKartu = null;
@@ -42,10 +43,16 @@ export function pasangGulir() {
   let tinggiGulir = 1;
   let terjadwal = false;
   let keAtasTampil = !keAtas.hidden;
+  let yLalu = window.scrollY;
+  let tLalu = performance.now();
 
-  function perbarui() {
+  function perbarui(t) {
     terjadwal = false;
     const y = window.scrollY;
+    // Saat daftar dikibas cepat (> 1,5 px/ms), gambar yang hanya lewat tidak perlu dimuat (lihat gambar.js).
+    if (Math.abs(y - yLalu) / Math.max(t - tLalu, 1) > 1.5) tahanGambar(150);
+    yLalu = y;
+    tLalu = t;
     kepala.classList.toggle('melayang', y > 8);
     const tampil = y >= 900;
     if (tampil !== keAtasTampil) {
