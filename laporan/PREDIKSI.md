@@ -364,10 +364,19 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:**
-- **Hasil ukur (median 3 kali):**
-- **Prediksi vs kenyataan:**
-- **Efek samping yang muncul:**
+- **Hash commit perbaikan:** 28ed706
+- **Hasil ukur (median 3 kali):** dibanding P-14. S5: frame > 50 ms 62,7 → 69 per 10 detik (62-84), sibuk 87,4% →
+  87,4%, long task 118 → 85 ms, frame terburuk 162 → 133 ms. S6 sibuk 52,9% → **37,7%**. INP S1 496 → 360 ms
+  (232-432).
+- **Prediksi vs kenyataan:** Frame lambat S5 turun 30-40%: **meleset**, tidak berubah. Frame gulir tetap berisi
+  kerja untuk kartu yang baru mendekati layar (sekarang ditata saat itu), dan dokumen SVG gambar. Recalculate Style
+  S6 turun: **sesuai** (sibuk turun 15 poin). Yang tidak diprediksi: INP S1 membaik, karena kartu di luar layar
+  tidak lagi ikut ditata dan digambar di setiap huruf.
+- **Efek samping yang muncul:** CLS tetap 0 (tinggi perkiraan 440 px tidak menimbulkan pergeseran yang terlihat).
+  Harga yang baru terlihat di trace akhir: hit test saat ketukan S2 bisa memaksa Layout kartu yang dilewati
+  `content-visibility` (131 ms pada trace S2 pengukuran pagi; 44 ms pada trace akhir `S2-sesudah.json.gz`).
+
+---
 
 ## P-17: Gambar dimuat dan digambar di tengah guliran cepat
 
