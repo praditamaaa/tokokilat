@@ -14,7 +14,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overscroll-behavior-y: contain; /* cegah pull-to-refresh tanpa listener touchmove */ }
 body { margin: 0; font: 15px/1.45 var(--huruf); color: var(--tinta); background: var(--kabut); }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
