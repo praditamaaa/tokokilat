@@ -36,7 +36,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:**
+- **Hash commit perbaikan:** 5cbd9d86f9c927b98ea5fe40f4d4e6ea81b781b9
 - **Hasil ukur (median 3 kali):** dibanding kode awal. S0: permintaan gambar 3.000 → **8**, data gambar 3.228 → **9KB**, gambar terakhir selesai detik 146 → **22,1** (±sama dengan selesainya render kartu); halaman tenang (sesi)
   441-477 → 25-26 detik. Long task saat memuat 14.402 → 19.391 ms (per ulangan 12,8-14,9 detik vs 13,3-19,6 detik).
   S6: frame main thread 2,1 → 4,4 per detik, frame terburuk 592 → 345 ms, frame > 50 ms 20 → 43 per 10 detik, sibuk
