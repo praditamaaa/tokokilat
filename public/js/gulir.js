@@ -82,3 +82,5 @@ export function pasangGulir() {
 
   $('#ke-atas').addEventListener('click', () => window.scrollTo({ top: 0 }));
 }
+}
+}
