@@ -5,6 +5,7 @@ import { pasangVoucher } from './harga-promo.js';
 import { pasangPromo } from './promo.js';
 import { pasangGulir } from './gulir.js';
 import { pasangKaki } from './kategori.js';
+import * as analitik from './analitik.js';
 
 async function mulai() {
   pasangPromo();
@@ -19,7 +20,7 @@ async function mulai() {
   pasangKaki(produk);
   renderProduk(produk);
 
-  if (window.Lacak) window.Lacak.kirim('page_view', { halaman: 'flashsale-1212', jumlahProduk: produk.length });
+  analitik.kirim('page_view', { halaman: 'flashsale-1212', jumlahProduk: produk.length });
 }
 
 mulai();
