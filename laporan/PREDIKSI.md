@@ -36,7 +36,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** 5cbd9d86f9c927b98ea5fe40f4d4e6ea81b781b9
+- **Hash commit perbaikan:** 5cbd9d8
 - **Hasil ukur (median 3 kali):** dibanding kode awal. S0: permintaan gambar 3.000 → **8**, data gambar 3.228 → **9KB**, gambar terakhir selesai detik 146 → **22,1** (±sama dengan selesainya render kartu); halaman tenang (sesi)
   441-477 → 25-26 detik. Long task saat memuat 14.402 → 19.391 ms (per ulangan 12,8-14,9 detik vs 13,3-19,6 detik).
   S6: frame main thread 2,1 → 4,4 per detik, frame terburuk 592 → 345 ms, frame > 50 ms 20 → 43 per 10 detik, sibuk
@@ -88,16 +88,16 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 **Tiket terkait:** TK-1041, TK-1057 (render setelah voucher), TK-1081 (render awal)
 
-**Tanggal dan hash commit entri ini:** ....
+**Tanggal dan hash commit entri ini:** 2-10-2026
 
 ### Sebelum perbaikan
 
-- **Yang teramati di trace (baseline):** di task awal 88 detik, 'formatRupiah' memakan 9.710 ms self dan 'formatRibuan' memakan 1.868 ms self Micro-benchmark CPU 4x
+- **Yang teramati di trace (baseline):** di task awal 88 detik, 'formatRupiah' memakan 9.710 ms self dan 'formatRibuan' memakan 1.868 ms self Micro-benchmark CPU 4x ('uji-dugaan.mjs'): 3000x 'formatRupiah' = 1.161-4.036 ms (Inisialisasi data locate ICU). Setelah P-02, pengukuran awal saat laptop masih memakai baterai: selama S1 'formatRupiah'masih 276,5 ms self dari 12 kali render kartu
 - **Dugaan mekanisme:** 'formatRupiah' memanggil 'new Intl.NumberFormat ('id-ID', {...}') di setiap panggilan. Konstruktor melakukan negosiasi locale, membaca data ICU, dan membangun objek performat. Hasilnya dibuang setelah satu kali 'format()', 'Number.prototype.toLocaleString('id-ID')' (rating,jumlah terjual, ringkasan) juga membuat performa baru setiap kali. Semuanya kerja Javascrip sinkron di dalam task render, jadi memperpanjang task yang memproses setiap ketikan (tahap JS pada pipeline, sebelum Style/Layout)
 - **Rencana perubahan:** pada 'util.js' membuat dua performat sekali saat rupiah dan angka biasa. 'formatRupiah', 'formatRibuan', dan fungsi baru 'formatAngka' memakai performat itu. Semua 'toLocaleString('id-ID')' di kode aplikasi diganti 'formatAngka'. Kesetaraan keluaran diuji menghasilkan teks identik.
 - **Prediksi terukur:**
 
-1. BIaya pemformatan perkartu turun dari -+ 1,3 ms menjadi -+0,01 ms (CPU 4x). Per render 24 kartu, sekitar 60-100 ms hilang dari task ketikan S1 dan dari task render awal S0.
+1. Biaya pemformatan perkartu turun dari -+ 1,3 ms menjadi -+0,01 ms (CPU 4x). Per render 24 kartu, sekitar 60-100 ms hilang dari task ketikan S1 dan dari task render awal S0.
 2. Belum Cukup membawa INP S1 ke bawah 200 ms, karena yang dominan setelah P-02 adalah layout paksanya 'samakanTinggiJudul' yang memakan waktu -+3,2 detik per skenario, P-04.
 3. Efek samping yang mungkin terjadi adalah biaya dari inisialisasi ICU (selama -+ 190 ms) pindah ke saat modul 'util.js' dievaluasi. Waktu totalnya sama, hanya terjadi lebih awal sebelum produk tiba.
 
@@ -108,6 +108,55 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
+- **Hash commit perbaikan:** ....
+- **Hasil ukur (median 3 kali):** ....
+- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
+- **Efek samping yang muncul:** ....
+
+
+## P-04: Memaksa layout sinkron 24 kali per render
+
+**Tiket terkait:** TK-1041, TK-1081
+**Tanggal dan hash commit entri ini:** 2-10-2026
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):** di task render awal 88 detik, 'samakanTinggiJudul' memakan 38.009 ms (total). Di dalamnya ada 24 event Layout yang dipicu dari 'katalog.js:73' ('j.offsetHeight') dengan total 31.105 ms, -+,3 detik per layout karena setiap layout menata grid 3000 kartu. Setelah P-02(trace `diagnosis-S1-setelah-P-02.json.gz`, pengukuran awal saat laptop masih memakai baterai):`samakanTinggiJudul` masih 3.207 ms self selama S1 (12 render × 24 kartu), atau -+53% dari waktu penanganan input. Ada 403 Layout paksa di skenario itu.
+- **Dugaan mekanisme:** Layout thrashing. Loop menulis 'j.style.height = 'auto''(layout menjadi kotor), lalu langsung membaca 'j.offsetHeight'. Pembacaan geometri ketika layout kotor memaksa browser menjalankan tahap Style + Layout secara sinkron di tengah JavaScript. Baris berikutnya menulis 'style.height' lagi (kotor lagi), dan iterasi berikutnya membaca lagi, sehingga terjadi 24 layout paksa per render. Layout yang dipaksa ini tidak menggantikan layout frame; setelah 'judul.forEach(...)' menulis tinggi ke semua judul, frame berikutnya tetap menata ulang. Ada juga bug kebenaran: tinggi diambil dari judul tertinggi di 24 contoh pertama, jadi judul yang lebih panjang terpotong di tengah baris tanpa elipsis ('overflow:hidden').
+- **Rencana perubahan:** hapus 'samakanTinggiJudul'dan serahkan pada CSS. '.kartu-judul' memakai '-webkit-line-clamp: 3' (plus 'line-clamp') dengan 'min-height' setinggi 3 baris. Semua judul menempati ruang yang sama, sehingga harga dan tombol dalam satu deret tetap sejajar, tanpa satu pun pembacaan layout dari JS. Data sampel 300 produk di 412 px: 7,7% judul 1 baris, 71,7% 2 baris, 19% 3 baris, 1,7% 4 baris.
+- **Prediksi terukur:**
+
+1. Layout paksa yang berasal dari 'katalog.js' turun dari 24 per render menjadi 0. Sisa layout paksa di S1 datang dari 'periksaGulir' dan timer hitung mundur/teks berjalan ('offsetWidth').
+2. Waktu penanganan per ketikan S1 turun sekitar 250 ms (CPU 4x). INP S1 turun ke kisaran 1-2 detik, karena masih ada 'periksaGulir', panggilan SDK per huruf, 'normalkan', dan frame yang berat akibat timer.
+3. Efek samping: 1,7% judul (4 baris di layar 412 px) kini terpotong di baris ke-3 dengan elipsis "...". Sebelumnya judul semacam ini terpotong di tempat acak tanpa tanda. Nama lengkap tetap ada di DOM (dibaca oleh pembaca layar) dan di 'alt' gambar.
+
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+
+1. Memisahkan baca dan tulis (semua tulis 'auto', baru semua baca, baru semua tulis): tetap 1 layout paksa per render dan tetap bergantung pada 24 contoh.
+2. CSS subgrid (baris kartu berbagi track grid): tinggi judul sejajar tepat per deret tanpa memotong, tetapi struktur kartu harus diubah (setiap kartu merentang 6 baris grid) dan lebih sulit dirawat. Layak dipertimbangkan jika tim desain menolak elipsis.
+3. Mengukur dengan ResizeObserver lalu menulis tinggi: tidak memaksa layout, tetapi menulis sesudah layout memicu layout kedua dan pergeseran tata letak yang terlihat.
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** ....
+- **Hasil ukur (median 3 kali):** ....
+- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
+- **Efek samping yang muncul:** ....
+
+## P-05: Menormalkan pencarian produk
+
+**Tiket terkait:** TK-1041
+**Tanggal dan hash commit entri ini:** 2-10-2026
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):** setelah P-02 (trace 'diagnosis-S1-setelah-P-02.json.gz', pengukuran awal saat laptop masih memakai baterai), 'normalkan' di 'pencarian.js' memakan 389 ms self selama S1 (12 ketikan, -+32 ms perketikan). Micro-benchmark CPU 4x menyaring 3000 produk dengan kata "sepatu" = 26,5 ms bila teks dinormalkan ulang, 4,6 ms bila teks sudah dinormalkan sebelumnya (hasil sama: 106 produk).
+- **Dugaan mekanisme:** 'cocok()' membangun string gabungan nama+merek+kategori+kota lalu menjalankan 'toLowerCase', 'normalize(NFD)' , dan dua 'replace' regex untuk setiap produk di setiap huruf yang diketik.Teks produk tidak pernah berubah, jadi hasilnya selalu sama. Semua kerja ini JS sinkron di task 'input' sebelum render.
+- **Rencana perubahan:** simpan teks pencarian yang sudah dinormalkan per produk di 'Map' (dibuat saat pertama dibutuhkan). Kata kunci dipecah sekali per pencarian, tidak sekali per produk.
+- **Prediksi terukur:** biaya penyaringan per ketikan turun dari -+26-32 ms menjadi -+5 ms (CPU 4x). Ketikan pertama tetap membayar -+26 ms untuk mengisi cache. Dampak ke INP S1 kecil (untuk -+25 ms per ketikan). Ini bukan penyebab utamanya, Namun karena murah dan tidak berisiko. Efek samping: memori tambahan -+3000 string pendek (-+150 KB).
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:** membangun indeks kata (inverted index) atau trie. Lebih cepat untuk data besar, tetapi 3000 produk × `includes` sudah < 5 ms, dan pencocokan substring (misal "sepa" cocok dengan "sepatu") jadi lebih rumit.
+
+### Sesudah perbaikan
 - **Hash commit perbaikan:** ....
 - **Hasil ukur (median 3 kali):** ....
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
@@ -198,13 +247,6 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-<<<<<<< HEAD
-
-- **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
-  ==============================
 - **Hash commit perbaikan:** 387244c
 - **Hasil ukur (median 3 kali):** dibanding P-05, keduanya pengukuran pagi (`data/P-06-pagi`). S5 (roda mouse): frame > 50 ms 79,4 → 77,1 per 10 detik, frame
   main thread 12,0 → 12,9 per detik, layout paksa 576 → 435, long task 214 → 182 ms, waktu menggulir 10,3 → 10,4
@@ -368,7 +410,37 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
   task terlama 134 ms, sama dengan sebelumnya). Uji fungsional "riwayat aktivitas: entri tersimpan, tidak ada data
   lama hilang" lulus.
 
----
+## P-14: Setiap huruf membangun kartu baru dan memuat gambar SVG-nya
+
+**Tiket terkait:** TK-1041
+**Tanggal dan hash commit entri ini:** 2-10-2026
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):** pengukuran awal commit P-13 (satu ulangan, laptop masih memakai baterai, trace 'diagnosis-S1-setelah-P-13.json.gz'): INP S1 608 ms, long task terlama 290 ms, 18 long task. Isi task terlama adalah frame yang memproses ketikan: 'set innerHTML', 'buatKartu', 'append', lalu Layout (65 layout, 679 ms) dan Recalculate Style (620 ms). Trace S5 dari commit yang sama menunjukkan setiap gambar produk yang tiba membuat dokumen SVG sendiri di main thread (task 'DocumentLoader::CommitNavigation' + parser + even 'readystatechange' ), -+20 ms pergambar pada CPU 4x.
+- **Dugaan mekanisme:** setiap huruf mengganti seluruh isi kisi dengan 24 kartu baru. Membuat dan menata 24 kartu (Style + Layout + Paint) memakan -+100-150 ms pada CPU 4x. Karena kartunya baru, sekitar 8 gambar dalam Jarak  lazy-load diminta lagi, dan masing-masing menambah -+20 ms kerja main thread saat tiba. Dengan ketikan tiap 200 ms, kerja satu huruf (-+250-350 ms) belum selesai ketika huruf berikutnya datang, sehingga huruf menunggu di antrean (input delay) dan INP naik. Gambar untuk hasil sementara ("s", "se", "sep"...) hampir pasti tidak pernah dilihat pengguna.
+- **Rencana perubahan:**
+
+1. Ukuran halaman kisi diturunkan dari 24 menjadi 12 kartu (6 baris setara 2.700 px di 412 px, masih lebih dari viewport + jarak lazy-load). Batch saat menggulir juga 12 kartu.
+2. Render yang dipicu pencarian menunda pemuatan gambar :'src' disimpan di 'data-src' dan baru dipasang 350 ms setelah render terakhir. Selama pengguna masih mengetik, tidak ada gambar baru yang diminta. Setelah berhenti,gambar hasil akhir dimuat. Kartu dari guliran dan render awal tetap langsung memasang 'src'.
+
+- **Prediksi terukur:**
+
+1. S1: kerja per huruf turun ke -+80-120 ms (CPU 4x). INP S1 turun dari ±600 ms ke =< 250 ms. Belum tentu =< 200 ms, karena setiap huruf tetap membangun 12 kartu dan menjalankan satu frame penuh di CPU 4x.
+2. Jumlah dokumen SVG yang dibuat selama S1 turun dari puluhan menjadi -+6-8 (hanya untuk hasil terakhir).
+3. Efek samping: gambar hasil pencarian muncul -+350 ms setelah pengguna berhenti mengetik (kotak berukuran tetap tampil lebih dulu). Menggulir memuat batch yang lebih kecil, jadi batch lebih sering ditambahkan.
+
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+
+1. Men debounce seluruh render pencarian (misal 300 ms): huruf tampil cepat, tetapi hasil tidak mengikuti ketikan sampai pengguna berhenti. Debounce 150 ms (yang diusulkan AI) tidak pernah menyatu pada ritme 200 ms per huruf.
+2. Menyimpan dan memakai ulang elemen kartu per id produk: menghindari membangun ulang kartu yang sama, tetapi kartu yang terlepas harus disinkronkan dengan harga voucher dan butuh batas memori. Lebih rumit untuk manfaat yang tumpang tindih dengan penundaan gambar.
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** ....
+- **Hasil ukur (median 3 kali):** ....
+- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
+- **Efek samping yang muncul:** ....
 
 ## P-15: Setiap frame gulir menghitung ulang style dan layout kartu yang tidak terlihat
 
@@ -440,7 +512,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sebelum perbaikan
 
-- - **Yang teramati:** commit P-15, laptop sudah tersambung listrik, pengukuran awal: S5 **82-91 frame > 50 ms per
+- **Yang teramati:** commit P-15, laptop sudah tersambung listrik, pengukuran awal: S5 **82-91 frame > 50 ms per
     10 detik**, main thread sibuk ±88-92%, jarak gulir ±28.800 px. Trace S5: 141 task frame gulir (4,7 detik, rata-rata
     33 ms) dan **96 task dokumen SVG gambar (1,56 detik)**, ditambah PaintImage ±0,2 detik. Eksperimen A/B dengan
     dekorasi `.kaki-hias` (blur 60 px + box-shadow besar) dimatikan: S5 turun ke ±60 frame > 50 ms. Karena daftar
@@ -475,23 +547,21 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
     dokumen SVG, tetapi server/CDN di luar ruang lingkup (masuk rekomendasi).
   - Menurunkan jarak lazy-load: tidak mengurangi jumlah gambar yang lewat saat dikibas, hanya menunda sedikit.
 
-  ### Sesudah perbaikan
-- **Hash commit perbaikan:**
-- **Hasil ukur (median 3 kali):**
-- **Prediksi vs kenyataan:**
-- **Efek samping yang muncul:**
-- **Hash commit perbaikan:** `78fb2c2` (entri prediksi ini di-commit lebih dulu: `6e06968`)
-- **Hasil ukur (median 3 kali):** dibanding kode awal. S0: permintaan gambar 3.000 → **8**, data gambar 3.228 → **9
-  KB**, gambar terakhir selesai detik 146 → **22,1** (±sama dengan selesainya render kartu); halaman tenang (sesi)
-  441-477 → 25-26 detik. Long task saat memuat 14.402 → 19.391 ms (per ulangan 12,8-14,9 detik vs 13,3-19,6 detik).
-  S6: frame main thread 2,1 → 4,4 per detik, frame terburuk 592 → 345 ms, frame > 50 ms 20 → 43 per 10 detik, sibuk
-  96,8% → 99,8%. P-01 hanya diukur pada S0 dan S6 (ukur-semua.sh).
-- **Prediksi vs kenyataan:** Jumlah gambar (prediksi 6-10), data (< 15 KB), dan waktu tenang (≈ waktu render, ±20
-  detik) **sesuai**. Yang tidak kami prediksi: median long task saat memuat naik 35%. Variasi antar-ulangan di versi
-  yang sama besar (13,3 vs 19,6 detik), jadi kami tidak menganggapnya efek P-01, dan penyebabnya belum ditelusuri.
-  Di S6 frame kini lebih sering dan lebih pendek (dugaan kami: tidak ada lagi ribuan event `load` dan dokumen SVG
-  gambar yang diproses), tetapi masing-masing masih > 50 ms, sehingga jumlah frame lambat per 10 detik justru naik.
-  Ini contoh metrik jumlah frame lambat yang menyesatkan bila frame-nya jarang.
-- **Efek samping yang muncul:** CLS S0 naik dari 0 ke **0,137** di ketiga ulangan. Main thread tidak lagi tertahan
-  ribuan respons gambar, sehingga banner promo sempat tampil dan menggeser konten 218 px. Masalah ini sebelumnya
-  tersembunyi (lihat P-13). Kotak abu-abu saat mengibas cepat sesuai prediksi (lihat P-17).
+### Sesudah perbaikan
+- **Hash commit perbaikan:** 90c84a7
+- **Hasil ukur (median 3 kali):** dibanding P-16. Keduanya diukur pada malam 26-09 (`data/P-16-malam`, `data/P-17`).
+  S5: frame > 50 ms 1 → 3 per 10 detik (ulangan 1/1/46 → 2/5/3), frame main thread 50 → 49 per detik, frame terburuk
+  58 → 72 ms, sibuk 62% → 67,5%. INP S1 120 → **72 ms** (104-184 → 72-104). Permintaan gambar S0 8 → 6. INP S2 72 →
+  80 ms, INP S4 80 → 80 ms. S6 dengan alat ukur: sibuk 25% → 29%.
+- **Prediksi vs kenyataan:** prediksi S5 (±25-45 frame lambat, sibuk ±65-75%) dibuat dari pengukuran di jendela yang
+  buruk. Dalam kondisi baik, P-16 sudah hanya 1 frame lambat per 10 detik, jadi P-17 tidak punya ruang untuk
+  memperbaiki S5. Hasilnya (3) sedikit lebih buruk, masih dalam variasi. Prediksi bahwa target ≤ 2 belum tercapai
+  **tidak berlaku lagi**, karena P-16 ternyata sudah mencapainya dalam kondisi baik. Yang tidak diprediksi: INP S1
+  membaik ke 72 ms, karena gambar hasil sementara tidak lagi di-decode dan ditata di tengah pengetikan. Pengukuran
+  pagi (P-16 pukul 10.52 vs P-17 pukul 06.35, `data/P-17-pagi`) sempat memberi S5 78 → 65 dan S6 60 → 45 frame per
+  detik. Karena lintas jendela, angka itu tidak dipakai.
+- **Efek samping yang muncul:** kotak abu-abu saat mengibas, sesuai rencana (gambar terpasang ±150 ms setelah
+  guliran melambat). S5 sedikit memburuk dan S6 dengan alat ukur naik 25% → 29%. Dugaan kami: IntersectionObserver
+  pemuat gambar menambah kerja di setiap frame. Dugaan ini belum dibuktikan dengan A/B.
+
+---
