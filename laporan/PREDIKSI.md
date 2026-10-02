@@ -109,15 +109,18 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - S1: setiap huruf lebih ringan ±41-57 ms (tidak ada SDK per huruf). S5: tidak ada panggilan SDK di callback gulir, jadi frame > 50 ms turun.
 - S3: `begin_checkout` 1,2 MB keluar dari jalur klik (masalah pesanan ganda sendiri ditangani P-10).
 - Efek samping: event sampai ke SDK 0-3 detik lebih lambat. Di waktu senggang masih ada task ±41-57 ms per event (biaya tetap SDK). Task ini tidak di jalur interaksi, tetapi bisa menunda satu frame bila jatuh tepat sebelum vsync. Tim data kehilangan riwayat lengkap per event (riwayat tetap tersimpan utuh di `localStorage`). Ini perlu disepakati dengan tim data.
-- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:** 
-
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
 - Menjalankan SDK di Web Worker: SDK menulis ke `window.Lacak` dan membaca `navigator`/`screen` di main thread, dan berkas vendor tidak boleh diubah atau dibungkus ulang.
 - `setTimeout(0)` setelah umpan balik: memindahkan biaya keluar dari task klik, tetapi task berikutnya tetap bisa menahan input atau frame berikutnya. Waktu senggang lebih tepat untuk kerja yang tidak mendesak.
 - `scheduler.postTask({ priority: 'background' })`: bagus, tetapi belum ada di semua browser target (Safari).
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
+- **Hash commit perbaikan:**
+- `3fc67ef`
+- **Hasil ukur (median 3 kali):**
+- dibanding dengan P-07; keduanya diukur malam 26-09. INP S2 424 -> 128 ms (304-424 -> 128-136), ketukan -> tombol berubah 385 menjadi 133 ms, dengan long task S2 dari 396 menjadi 115 ms. INP S3 384 -> 64 ms. INP S1 192 -> 160 ms. S5: frame > 50 ms 10,9 -> 4,0 per 10 detik (4-5), frame main thread 44 -> 48 per detik.
+- **Prediksi vs kenyataan:**
+- INP S2 ±200-300 ms: menunjukkan lebih baik daripada prediksi (128 ms). Sisa `JSON.parse`/`stringify`/`setItem` riwayat (P-09) ternyata lebih murah daripada perkiraan, yang diukur saat baterai. S1 lebih ringan per huruf: arah sesuai, tetapi di dalam variasi. S5 turun karena tidak ada lagi SDK di callback gulir: sesuai. Dengan 4 frame > 50 ms per 10 detik, S5 pada versi ini hampir mencapai target (≤ 2).
+- **Efek samping yang muncul:**
+- Event tiba 0-3 detik lebih lambat, dan ketujuh jenis event tetap terkirim (uji fungsional).pengukuran pagi untuk commit yang sama (`data/P-08-pagi`) memberi S5 79-89 frame > 50 ms per 10 detik, 20 kali lipat pengukuran malam. Perbedaan ini bukan efek P-08, melainkan kondisi mesin (Catatan metode). Sehingga perbandingan S5 hanya sah di dalam satu jendela pengukuran
