@@ -117,17 +117,19 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
+- **Hash commit perbaikan:** 8093ee1
+- **Hasil ukur (median 3 kali):** Long task S1 321 → 242 ms. Micro-benchmark penyaringan "sepatu" (CPU 4x): 28,4 → 1,9 ms.
+- **Prediksi vs kenyataan:** Prediksi dampak kecil (±25 ms per ketikan) **sesuai arah**. Median INP turun 120 ms, sebagian besar penurunan itu variasi. Sesuai dugaan, ini bukan
+  penyebab utama.
+- **Efek samping yang muncul:** Tidak terlihat. Uji fungsional pencarian (jumlah hasil benar, kartu yang tampil
+  memang cocok, pesan kosong) lulus. Memori tambahan ±3000 string tidak diukur.
 
 ---
 
 ## P-06: `periksaGulir` di setiap scroll/touchmove/wheel dan listener sentuh non-pasif
 
 **Tiket terkait:** TK-1063 (utama), TK-1057 ("mau scroll juga tidak bisa"), TK-1041
-**Tanggal dan hash commit entri ini:** 39-09-2026, hash dicatat di bagian "Sesudah"
+**Tanggal dan hash commit entri ini:** 30-09-2026, hash dicatat di bagian "Sesudah"
 
 ### Sebelum perbaikan
 
