@@ -1,9 +1,7 @@
+import { saatSenggang } from './util.js';
+
 const antrean = [];
 let terjadwal = false;
-
-const saatSenggang = window.requestIdleCallback
-    ? (fn) => window.requestIdleCallback(fn, { timeout: 3000 })
-    : (fn) => setTimeout(fn, 300);
 
 function kirimKeSdk(nama, data) {
     if (window.Lacak) window.Lacak.kirim(nama, data);

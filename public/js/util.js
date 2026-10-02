@@ -27,6 +27,13 @@ export function hargaSetelahDiskon(produk) {
   return Math.round((produk.harga * (100 - produk.diskon)) / 100 / 100) * 100;
 }
 
+// Jalankan fn saat main thread senggang (paling lambat setelah batasMs), untuk kerja yang tidak
+// mendesak dan tidak boleh menunda umpan balik interaksi.
+export function saatSenggang(fn, batasMs = 3000) {
+  if (window.requestIdleCallback) window.requestIdleCallback(fn, { timeout: batasMs });
+  else setTimeout(fn, 300);
+}
+
 // Salinan dalam (deep copy) supaya objek konfigurasi tidak termutasi.
 export function salinDalam(objek) {
   return JSON.parse(JSON.stringify(objek));
