@@ -2,54 +2,66 @@
 // tombol "Ke atas", efek kartu muncul, dan pencatatan impresi produk.
 
 import { $ } from './util.js';
+import { catatImpresi } from './analitik.js';
 
 const sudahTercatat = new Set();
+let pengamatKartu = null;
 
-export function periksaGulir() {
-  const kepala = $('#kepala');
-  const bar = $('#bar-gulir');
-  const keAtas = $('#ke-atas');
-
-  const y = window.scrollY;
-  kepala.classList.toggle('melayang', y > 8);
-  keAtas.hidden = y < 900;
-
-  const tinggiDokumen = document.documentElement.scrollHeight - window.innerHeight;
-  bar.style.width = (tinggiDokumen > 0 ? (y / tinggiDokumen) * 100 : 0) + '%';
-
-  // Kartu yang masuk layar dimunculkan dengan animasi, dan dicatat sebagai impresi.
-  const tinggiLayar = window.innerHeight;
+function kartuMasukLayar(entri) {
   const impresiBaru = [];
-  document.querySelectorAll('.kartu').forEach((kartu) => {
-    const kotak = kartu.getBoundingClientRect();
-    const masukLayar = kotak.top < tinggiLayar + 80 && kotak.bottom > -80;
-    if (masukLayar && !kartu.classList.contains('terlihat')) {
-      kartu.classList.add('terlihat');
-      kartu.style.minHeight = Math.round(kotak.height) + 'px'; // cegah kartu "mengempis" saat animasi
-    }
-    if (masukLayar && !sudahTercatat.has(kartu.dataset.id)) {
+  for (const e of entri) {
+    if (!e.isIntersecting) continue;
+    const kartu = e.target;
+    kartu.classList.add('terlihat');
+    pengamatKartu.unobserve(kartu);
+    if (!sudahTercatat.has(kartu.dataset.id)) {
       sudahTercatat.add(kartu.dataset.id);
       impresiBaru.push(kartu.dataset.id);
     }
-  });
+  }
+  if (impresiBaru.length) catatImpresi(impresiBaru);
+}
 
-  if (impresiBaru.length && window.Lacak) window.Lacak.kirim('impression', { produk: impresiBaru });
+export function amatiKartu(kartu) {
+  pengamatKartu.observe(kartu);
 }
 
 export function pasangGulir() {
-  window.addEventListener('scroll', periksaGulir);
-  window.addEventListener('resize', periksaGulir);
+  const kepala = $('#kepala');
+  const bar = $('#bar-gulir');
+  const keAtas = $('#ke-atas');
+  pengamatKartu = new IntersectionObserver(kartuMasukLayar, { rootMargin: '80px 0px' });
 
-  // Cegah "pull to refresh" tak sengaja di Android ketika pengguna sedang di puncak halaman.
-  let yAwal = 0;
-  const utama = $('#utama');
-  utama.addEventListener('touchstart', (e) => { yAwal = e.touches[0].clientY; }, { passive: false });
-  utama.addEventListener('touchmove', (e) => {
-    const menarikKeBawah = e.touches[0].clientY > yAwal;
-    if (window.scrollY === 0 && menarikKeBawah) e.preventDefault();
-    periksaGulir();
-  }, { passive: false });
-  utama.addEventListener('wheel', () => { periksaGulir(); }, { passive: false });
+  let tinggiGulir = 1;
+  let terjadwal = false;
+  let keAtasTampil = !keAtas.hidden;
+
+  function perbarui() {
+    terjadwal = false;
+    const y = window.scrollY;
+    kepala.classList.toggle('melayang', y > 8);
+    const tampil = y >= 900;
+    if (tampil !== keAtasTampil) {
+      keAtas.hidden = !tampil;
+      keAtasTampil = tampil;
+    }
+    bar.style.transform = 'scaleX(' + Math.min(y / tinggiGulir, 1).toFixed(4) + ')';
+  }
+
+  function jadwalkan() {
+    if (terjadwal) return;
+    terjadwal = true;
+    requestAnimationFrame(perbarui);
+  }
+
+  window.addEventListener('scroll', jadwalkan, { passive: true });
+  new ResizeObserver(() => {
+    tinggiGulir = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
+    jadwalkan();
+  }).observe(document.documentElement);
+
+  // Pull-to-refresh dicegah lewat CSS (overscroll-behavior-y), bukan listener touchmove non-pasif
+  // yang membuat setiap gerakan jari menunggu main thread.
 
   $('#ke-atas').addEventListener('click', () => window.scrollTo({ top: 0 }));
 }
