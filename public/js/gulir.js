@@ -2,6 +2,7 @@
 // tombol "Ke atas", efek kartu muncul, dan pencatatan impresi produk.
 
 import { $ } from './util.js';
+import { catatImpresi } from './analitik.js';
 
 const sudahTercatat = new Set();
 let pengamatKartu = null;
@@ -17,11 +18,21 @@ function kartuMasukLayar(entri) {
     kartu.classList.add('terlihat');
     pengamatKartu.unobserve(kartu);
     if (!sudahTercatat.has(kartu.dataset.id)) {
+  for (const e of entri) {
+    if (!e.isIntersecting) continue;
+    const kartu = e.target;
+    kartu.classList.add('terlihat');
+    pengamatKartu.unobserve(kartu);
+    if (!sudahTercatat.has(kartu.dataset.id)) {
       sudahTercatat.add(kartu.dataset.id);
       impresiBaru.push(kartu.dataset.id);
     }
   }
-  if (impresiBaru.length && window.Lacak) window.Lacak.kirim('impression', { produk: impresiBaru });
+  if (impresiBaru.length) catatImpresi(impresiBaru);
+}
+
+export function amatiKartu(kartu) {
+  pengamatKartu.observe(kartu);
 }
 
 export function amatiKartu(kartu) {
