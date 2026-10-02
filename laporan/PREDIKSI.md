@@ -176,11 +176,18 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
-
+- **Hash commit perbaikan:** 387244c
+- **Hasil ukur (median 3 kali):** dibanding P-05, keduanya pengukuran pagi (`data/P-06-pagi`). S5 (roda mouse): frame > 50 ms 79,4 → 77,1 per 10 detik, frame
+  main thread 12,0 → 12,9 per detik, layout paksa 576 → 435, long task 214 → 182 ms, waktu menggulir 10,3 → 10,4
+  detik. INP S1 432 → **208 ms** (ulangan 200-976), long task S1 242 → 166 ms.
+- **Prediksi vs kenyataan:** Frame lambat S5 turun ke 10-20: **meleset**, praktis tidak berubah. Ada dua sebab.
+  Pertama, prediksi dibuat dari pengukuran eksplorasi dengan metrik frame lain (PrePaint, lihat Catatan metode) dan
+  sebelum Chrome dikunci ke P-core. Kedua, layout paksa dari `gulir.js` memang hilang, tetapi sisa 435 layout paksa
+  berasal dari timer 10 ms (`offsetWidth`), S5 memakai roda mouse, sehingga efek listener `touchmove` non-pasif
+  tidak terukur langsung. Yang tidak terduga: INP S1 turun ke 208 ms, karena `renderProduk` memanggil `periksaGulir`
+  (`getBoundingClientRect` semua kartu + `scrollY`) di setiap render.
+- **Efek samping yang muncul:** Pull-to-refresh kini dicegah di seluruh halaman lewat `overscroll-behavior-y`
+  (sesuai prediksi). Impresi dikirim per batch IntersectionObserver (uji fungsional impresi lulus).
 
 
 ## P-08: SDK analitik dipanggil di tengah interaksi, dengan payload riwayat 1,2 MB
