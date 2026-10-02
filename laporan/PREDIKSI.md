@@ -253,6 +253,63 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Efek samping yang muncul:**
 - Event tiba 0-3 detik lebih lambat, dan ketujuh jenis event tetap terkirim (uji fungsional).pengukuran pagi untuk commit yang sama (`data/P-08-pagi`) memberi S5 79-89 frame > 50 ms per 10 detik, 20 kali lipat pengukuran malam. Perbedaan ini bukan efek P-08, melainkan kondisi mesin (Catatan metode). Sehingga perbandingan S5 hanya sah di dalam satu jendela pengukuran
 
+## P-11: Perhitungan Voucher "async" tetap satu task panjang tanpa kesempatan menggambar
+
+**Tiket terkait:** TK-1057 (utama), TK-1041 (mengetik saat voucher dihitung)
+**Tanggal dan hash commit entri ini: 02-10-2026**
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):**
+- pengukuran awal S4 setelah P-02 (laptop masih memakai baterai): long task 6.731 ms, INP 6.848 ms, 0 frame tergambar selama progres tampil (bar progres tidak pernah terlihat bergerak). Ketikan "tas" di kolom cari selama perhitungan hilang: nilai kolom tetap kosong, karena ketukan ke kolom cari baru diproses setelah huruf-hurufnya. Di kode awal dengan 300 produk (uji harness): long task 11,7 detik, INP 13 detik, 0 frame progres.
+- **Dugaan mekanisme:**
+- `hitungHargaPromo` ditandai `async`, tetapi isinya kerja CPU sinkron. `await` pada promise yang sudah selesai tidak menyerahkan giliran ke event loop. Lanjutannya hanya masuk **antrean microtask**, dan microtask checkpoint menguras antrean itu sampai habis, termasuk microtask baru yang terus ditambahkan setiap iterasi, sebelum event loop boleh mengambil task berikutnya atau menjalankan langkah rendering. Jadi 3000 iterasi berjalan di dalam satu task. Penulisan `isi.style.width` di setiap iterasi hanya mengubah DOM dan tidak pernah digambar sampai loop selesai. Input (ketukan, huruf) menunggu di antrean. Setelah loop, `perbaruiHargaVoucherDiKartu` membangun ulang kartu di task yang sama. Catatan Rudi #4 ("sudah async, jadi aman") keliru.
+- **Rencana perubahan:**
+- `hitungHargaPromo` menjadi fungsi sinkron biasa. Loop diiris per ±8 ms: setelah setiap irisan, progres diperbarui, lalu fungsi menyerahkan giliran dengan task baru. Dipakai `scheduler.yield()` bila tersedia;
+  bila tidak, `MessageChannel`, yang tidak terkena jeda minimum 4 ms seperti `setTimeout` bersarang. Di antara irisan, event loop bisa menjalankan input dan rendering.
+- Hasil ditampung di `Map` baru lalu ditukar sekaligus di akhir, jadi kartu yang dirender selama perhitungan (misal karena pengguna mengetik) tidak menampilkan harga setengah jadi. Penerapan voucher baru membatalkan
+  perhitungan yang sedang berjalan (penghitung generasi).
+- Kartu yang sudah tampil diperbarui di tempat (menyisipkan baris harga voucher), bukan dibangun ulang.
+- Tombol voucher diberi `aria-busy` selama perhitungan.
+- Perhitungan 40 kali `simulasiCicilan` yang hasilnya dibuang belum diubah di sini (lihat P-12), supaya efek penjadwalan dan efek pengurangan kerja bisa diukur terpisah.
+- **Prediksi terukur:**
+- S4: long task terlama selama perhitungan turun dari ±6,7 detik menjadi ≤ 60 ms (irisan 8 ms + kerja frame + render pencarian). Frame yang tergambar selama progres naik dari 0 menjadi ratusan, dengan progres berubah bertahap (≥ 20 langkah berbeda).
+- INP S4 (ketukan voucher, ketukan kolom cari, 3 huruf) < 200 ms, dan huruf "tas" benar-benar masuk ke kolom.
+- Efek samping: waktu total sampai voucher selesai naik, bukan turun (±7 -> ±9-11 detik), karena setiap irisan menunggu gilirannya dan frame ikut digambar. Pengguna menunggu sedikit lebih lama, tetapi halaman
+  tetap hidup dan progresnya terlihat. Waktu total dipangkas di P-12.
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+- Web Worker: perhitungan benar-benar paralel dan main thread bebas, tetapi 3000 produk harus dikirim (structured clone), aturan voucher diduplikasi di berkas worker, dan setelah P-12 perhitungannya hanya ±0,4 detik. Tidak
+  sebanding dengan kerumitannya.
+- `setTimeout(0)` per 50 produk (irisan jumlah tetap): setelah 5 tingkat bersarang ada jeda minimum 4 ms per irisan, dan irisan berjumlah tetap bisa terlalu panjang di perangkat lambat. Irisan berbasis waktu menyesuaikan diri.
+- `requestIdleCallback`: bisa tertunda lama bila halaman tidak pernah senggang (misal sedang digulir). Padahal pengguna sedang menunggu hasilnya, jadi ini bukan kerja latar.
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:**
+- **Hasil ukur (median 3 kali):**
+- **Prediksi vs kenyataan:**
+- **Efek samping yang muncul:**
+
+## P-12:
+
+**Tiket terkait:**
+**Tanggal dan hash commit entri ini:**
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):**
+- **Dugaan mekanisme:**
+- **Rencana perubahan:**
+- **Prediksi terukur:**
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:**
+- **Hasil ukur (median 3 kali):**
+- **Prediksi vs kenyataan:**
+- **Efek samping yang muncul:**
+
 ## P-09: "+ Keranjang" baru memberi umpan balik setelah riwayat 1,2 MB dibaca dan ditulis ulang
 
 **Tiket terkait:** TK-1044 (utama), TK-1052
@@ -312,8 +369,6 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
   lama hilang" lulus.
 
 ---
-
-
 
 ## P-15: Setiap frame gulir menghitung ulang style dan layout kartu yang tidak terlihat
 
