@@ -36,7 +36,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** 5cbd9d86f9c927b98ea5fe40f4d4e6ea81b781b9
+- **Hash commit perbaikan:** 5cbd9d8
 - **Hasil ukur (median 3 kali):** dibanding kode awal. S0: permintaan gambar 3.000 → **8**, data gambar 3.228 → **9KB**, gambar terakhir selesai detik 146 → **22,1** (±sama dengan selesainya render kartu); halaman tenang (sesi)
   441-477 → 25-26 detik. Long task saat memuat 14.402 → 19.391 ms (per ulangan 12,8-14,9 detik vs 13,3-19,6 detik).
   S6: frame main thread 2,1 → 4,4 per detik, frame terburuk 592 → 345 ms, frame > 50 ms 20 → 43 per 10 detik, sibuk
@@ -342,9 +342,16 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 ### Sesudah perbaikan
 
 - **Hash commit perbaikan:** 9448769
-- **Hasil ukur (median 3 kali):**dibanding P-08 pengukuran pagi (data/P-08-pagi). S2: ketukan → tombol berubah 147 → 99 ms (ulangan 97-99; P-08: 141-187), INP 168 → 192 ms (ulangan 184-208; P-08: 168-248), long task 141 → 134 ms. 
-- **Prediksi vs kenyataan:**Arah sesuai: umpan balik kini konsisten ±100 ms. Besarnya meleset. Diprediksi task klik ±5-15 ms, INP < 100 ms, dan umpan balik < 30 ms. Kenyataannya umpan balik 99 ms dan INP ±190 ms, karena sisa waktunya bukan di handler klik melainkan di input delay dan frame yang menggambar perubahan (pada CPU 4x). Di trace akhir S2-sesudah.json.gz bagian terbesarnya adalah Layout yang dipicu hit test saat ketukan (LAPORAN bagian 6). Trace per ulangan untuk versi antara tidak disimpan. 
-- **Efek samping yang muncul:**Task senggang untuk menyimpan riwayat tidak terlihat sebagai long task di S2 (long task terlama 134 ms, sama dengan sebelumnya). Uji fungsional "riwayat aktivitas: entri tersimpan, tidak ada data lama hilang" lulus. 
+- **Hasil ukur (median 3 kali):** dibanding P-08 pengukuran pagi (`data/P-08-pagi`). S2: ketukan → tombol berubah 147 → **99 ms** (ulangan 97-99; P-08:
+  141-187), INP 168 → 192 ms (ulangan 184-208; P-08: 168-248), long task 141 → 134 ms.
+- **Prediksi vs kenyataan:** Arah **sesuai**: umpan balik kini konsisten ±100 ms. Besarnya **meleset**. Diprediksi
+  task klik ±5-15 ms, INP < 100 ms, dan umpan balik < 30 ms. Kenyataannya umpan balik 99 ms dan INP ±190 ms, karena
+  sisa waktunya bukan di handler klik melainkan di input delay dan frame yang menggambar perubahan (pada CPU 4x). Di
+  trace akhir `S2-sesudah.json.gz` bagian terbesarnya adalah Layout yang dipicu hit test saat ketukan (LAPORAN
+  bagian 6). Trace per ulangan untuk versi antara tidak disimpan.
+- **Efek samping yang muncul:** Task senggang untuk menyimpan riwayat tidak terlihat sebagai long task di S2 (long
+  task terlama 134 ms, sama dengan sebelumnya). Uji fungsional "riwayat aktivitas: entri tersimpan, tidak ada data
+  lama hilang" lulus.
 
 ## P-14: Setiap huruf membangun kartu baru dan memuat gambar SVG-nya
 
@@ -377,6 +384,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Hasil ukur (median 3 kali):** ....
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
+
 
 
 ## P-15: Setiap frame gulir menghitung ulang style dan layout kartu yang tidak terlihat
@@ -428,10 +436,19 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:**
-- **Hasil ukur (median 3 kali):**
-- **Prediksi vs kenyataan:**
-- **Efek samping yang muncul:**
+- **Hash commit perbaikan:** 28ed706
+- **Hasil ukur (median 3 kali):** dibanding P-14. S5: frame > 50 ms 62,7 → 69 per 10 detik (62-84), sibuk 87,4% →
+  87,4%, long task 118 → 85 ms, frame terburuk 162 → 133 ms. S6 sibuk 52,9% → **37,7%**. INP S1 496 → 360 ms
+  (232-432).
+- **Prediksi vs kenyataan:** Frame lambat S5 turun 30-40%: **meleset**, tidak berubah. Frame gulir tetap berisi
+  kerja untuk kartu yang baru mendekati layar (sekarang ditata saat itu), dan dokumen SVG gambar. Recalculate Style
+  S6 turun: **sesuai** (sibuk turun 15 poin). Yang tidak diprediksi: INP S1 membaik, karena kartu di luar layar
+  tidak lagi ikut ditata dan digambar di setiap huruf.
+- **Efek samping yang muncul:** CLS tetap 0 (tinggi perkiraan 440 px tidak menimbulkan pergeseran yang terlihat).
+  Harga yang baru terlihat di trace akhir: hit test saat ketukan S2 bisa memaksa Layout kartu yang dilewati
+  `content-visibility` (131 ms pada trace S2 pengukuran pagi; 44 ms pada trace akhir `S2-sesudah.json.gz`).
+
+---
 
 ## P-17: Gambar dimuat dan digambar di tengah guliran cepat
 
@@ -440,7 +457,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sebelum perbaikan
 
-- - **Yang teramati:** commit P-15, laptop sudah tersambung listrik, pengukuran awal: S5 **82-91 frame > 50 ms per
+- **Yang teramati:** commit P-15, laptop sudah tersambung listrik, pengukuran awal: S5 **82-91 frame > 50 ms per
     10 detik**, main thread sibuk ±88-92%, jarak gulir ±28.800 px. Trace S5: 141 task frame gulir (4,7 detik, rata-rata
     33 ms) dan **96 task dokumen SVG gambar (1,56 detik)**, ditambah PaintImage ±0,2 detik. Eksperimen A/B dengan
     dekorasi `.kaki-hias` (blur 60 px + box-shadow besar) dimatikan: S5 turun ke ±60 frame > 50 ms. Karena daftar
@@ -475,23 +492,21 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
     dokumen SVG, tetapi server/CDN di luar ruang lingkup (masuk rekomendasi).
   - Menurunkan jarak lazy-load: tidak mengurangi jumlah gambar yang lewat saat dikibas, hanya menunda sedikit.
 
-  ### Sesudah perbaikan
-- **Hash commit perbaikan:**
-- **Hasil ukur (median 3 kali):**
-- **Prediksi vs kenyataan:**
-- **Efek samping yang muncul:**
-- **Hash commit perbaikan:** `78fb2c2` (entri prediksi ini di-commit lebih dulu: `6e06968`)
-- **Hasil ukur (median 3 kali):** dibanding kode awal. S0: permintaan gambar 3.000 → **8**, data gambar 3.228 → **9
-  KB**, gambar terakhir selesai detik 146 → **22,1** (±sama dengan selesainya render kartu); halaman tenang (sesi)
-  441-477 → 25-26 detik. Long task saat memuat 14.402 → 19.391 ms (per ulangan 12,8-14,9 detik vs 13,3-19,6 detik).
-  S6: frame main thread 2,1 → 4,4 per detik, frame terburuk 592 → 345 ms, frame > 50 ms 20 → 43 per 10 detik, sibuk
-  96,8% → 99,8%. P-01 hanya diukur pada S0 dan S6 (ukur-semua.sh).
-- **Prediksi vs kenyataan:** Jumlah gambar (prediksi 6-10), data (< 15 KB), dan waktu tenang (≈ waktu render, ±20
-  detik) **sesuai**. Yang tidak kami prediksi: median long task saat memuat naik 35%. Variasi antar-ulangan di versi
-  yang sama besar (13,3 vs 19,6 detik), jadi kami tidak menganggapnya efek P-01, dan penyebabnya belum ditelusuri.
-  Di S6 frame kini lebih sering dan lebih pendek (dugaan kami: tidak ada lagi ribuan event `load` dan dokumen SVG
-  gambar yang diproses), tetapi masing-masing masih > 50 ms, sehingga jumlah frame lambat per 10 detik justru naik.
-  Ini contoh metrik jumlah frame lambat yang menyesatkan bila frame-nya jarang.
-- **Efek samping yang muncul:** CLS S0 naik dari 0 ke **0,137** di ketiga ulangan. Main thread tidak lagi tertahan
-  ribuan respons gambar, sehingga banner promo sempat tampil dan menggeser konten 218 px. Masalah ini sebelumnya
-  tersembunyi (lihat P-13). Kotak abu-abu saat mengibas cepat sesuai prediksi (lihat P-17).
+### Sesudah perbaikan
+- **Hash commit perbaikan:** 90c84a7
+- **Hasil ukur (median 3 kali):** dibanding P-16. Keduanya diukur pada malam 26-09 (`data/P-16-malam`, `data/P-17`).
+  S5: frame > 50 ms 1 → 3 per 10 detik (ulangan 1/1/46 → 2/5/3), frame main thread 50 → 49 per detik, frame terburuk
+  58 → 72 ms, sibuk 62% → 67,5%. INP S1 120 → **72 ms** (104-184 → 72-104). Permintaan gambar S0 8 → 6. INP S2 72 →
+  80 ms, INP S4 80 → 80 ms. S6 dengan alat ukur: sibuk 25% → 29%.
+- **Prediksi vs kenyataan:** prediksi S5 (±25-45 frame lambat, sibuk ±65-75%) dibuat dari pengukuran di jendela yang
+  buruk. Dalam kondisi baik, P-16 sudah hanya 1 frame lambat per 10 detik, jadi P-17 tidak punya ruang untuk
+  memperbaiki S5. Hasilnya (3) sedikit lebih buruk, masih dalam variasi. Prediksi bahwa target ≤ 2 belum tercapai
+  **tidak berlaku lagi**, karena P-16 ternyata sudah mencapainya dalam kondisi baik. Yang tidak diprediksi: INP S1
+  membaik ke 72 ms, karena gambar hasil sementara tidak lagi di-decode dan ditata di tengah pengetikan. Pengukuran
+  pagi (P-16 pukul 10.52 vs P-17 pukul 06.35, `data/P-17-pagi`) sempat memberi S5 78 → 65 dan S6 60 → 45 frame per
+  detik. Karena lintas jendela, angka itu tidak dipakai.
+- **Efek samping yang muncul:** kotak abu-abu saat mengibas, sesuai rencana (gambar terpasang ±150 ms setelah
+  guliran melambat). S5 sedikit memburuk dan S6 dengan alat ukur naik 25% → 29%. Dugaan kami: IntersectionObserver
+  pemuat gambar menambah kerja di setiap frame. Dugaan ini belum dibuktikan dengan A/B.
+
+---

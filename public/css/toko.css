@@ -77,8 +77,12 @@ button { cursor: pointer; }
 
 /* ---------- kisi produk ---------- */
 .kisi { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 12px; }
-.kartu { position: relative; display: flex; flex-direction: column; background: var(--putih); border: 1px solid var(--garis); border-radius: 10px; overflow: hidden; opacity: 0; margin-top: 16px; transition: opacity .35s ease, margin-top .35s ease; }
-.kartu.terlihat { opacity: 1; margin-top: 0; }
+.kartu { position: relative; display: flex; flex-direction: column; background: var(--putih); border: 1px solid var(--garis); border-radius: 10px; overflow: hidden; opacity: 0; transform: translateY(16px); transition: opacity .35s ease, transform .35s ease;
+  /* kartu jauh dari layar dilewati untuk style/layout/paint (termasuk animasi lencananya); ukurannya diingat */
+  content-visibility: auto; contain-intrinsic-size: auto 440px;
+}
+/* translateY(0), bukan none: berganti antara ada/tanpa transform memicu Layout, mengubah nilainya cukup di compositor */
+.kartu.terlihat { opacity: 1; transform: translateY(0); }
 .kartu-media { display: block; background: var(--kabut); }
 .kartu-media img { display: block; width: 100%; height: auto; }
 .kartu-badan { display: flex; flex-direction: column; gap: 6px; padding: 10px; flex: 1; }
@@ -122,7 +126,8 @@ button { cursor: pointer; }
 .kaki h2 { margin: 0 0 10px; font-size: 15px; color: var(--putih); }
 .kaki ol, .kaki ul { margin: 0; padding-left: 18px; }
 .kaki p { margin: 0; max-width: 46ch; }
-.kaki-hias { position: absolute; right: -80px; bottom: -120px; width: 380px; height: 380px; border-radius: 50%; background: var(--nila-2); filter: blur(60px); box-shadow: 0 0 120px 60px rgba(43, 35, 144, .6), 0 0 240px 120px rgba(255, 212, 0, .08); }
+/* layer komposit sendiri: blur digambar sekali, lalu hanya dipindahkan compositor saat kaki halaman bergeser */
+.kaki-hias { position: absolute; right: -80px; bottom: -120px; width: 380px; height: 380px; border-radius: 50%; background: var(--nila-2); filter: blur(60px); box-shadow: 0 0 120px 60px rgba(43, 35, 144, .6), 0 0 240px 120px rgba(255, 212, 0, .08); will-change: transform; }
 
 .ke-atas { position: fixed; right: 16px; bottom: 16px; z-index: 20; border: 0; border-radius: 99px; padding: 12px 16px; background: var(--tinta); color: var(--putih); font-weight: 700; }
 .toast { position: fixed; left: 50%; bottom: 24px; z-index: 60; transform: translateX(-50%); background: var(--tinta); color: var(--putih); padding: 12px 18px; border-radius: 10px; font-weight: 600; max-width: min(92vw, 520px); opacity: 0; pointer-events: none; transition: opacity .2s; }
