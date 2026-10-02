@@ -119,8 +119,6 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
 
-
-
 ## P-05: Menormalkan pencarian produk
 
 **Tiket terkait:** TK-1041
@@ -128,11 +126,11 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sebelum perbaikan
 
-- **Yang teramati di trace (baseline):** setelah P-02 (trace `diagnosis-S1-setelah-P-02.json.gz`, pengukuran awal saat laptop masih memakai baterai), `normalkan` di `pencarian.js` memakan 389 ms self selama S1 (12 ketikan, -+32 ms perketikan). Micro-benchmark CPU 4x menyaring 3000 produk dengan kata "sepatu" = 26,5 ms bila teks dinormalkan ulang, 4,6 ms bila teks sudah dinormalkan sebelumnya (hasil sama: 106 produk).
+- **Yang teramati di trace (baseline):** setelah P-02 (trace 'diagnosis-S1-setelah-P-02.json.gz', pengukuran awal saat laptop masih memakai baterai), 'normalkan' di 'pencarian.js' memakan 389 ms self selama S1 (12 ketikan, -+32 ms perketikan). Micro-benchmark CPU 4x menyaring 3000 produk dengan kata "sepatu" = 26,5 ms bila teks dinormalkan ulang, 4,6 ms bila teks sudah dinormalkan sebelumnya (hasil sama: 106 produk).
 - **Dugaan mekanisme:** 'cocok()' membangun string gabungan nama+merek+kategori+kota lalu menjalankan 'toLowerCase', 'normalize(NFD)' , dan dua 'replace' regex untuk setiap produk di setiap huruf yang diketik.Teks produk tidak pernah berubah, jadi hasilnya selalu sama. Semua kerja ini JS sinkron di task 'input' sebelum render.
 - **Rencana perubahan:** simpan teks pencarian yang sudah dinormalkan per produk di 'Map' (dibuat saat pertama dibutuhkan). Kata kunci dipecah sekali per pencarian, tidak sekali per produk.
 - **Prediksi terukur:** biaya penyaringan per ketikan turun dari -+26-32 ms menjadi -+5 ms (CPU 4x). Ketikan pertama tetap membayar -+26 ms untuk mengisi cache. Dampak ke INP S1 kecil (untuk -+25 ms per ketikan). Ini bukan penyebab utamanya, Namun karena murah dan tidak berisiko. Efek samping: memori tambahan -+3000 string pendek (-+150 KB).
-- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:** 
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
 
 ### Sesudah perbaikan
 
@@ -164,6 +162,38 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - Menjalankan SDK di Web Worker: SDK menulis ke `window.Lacak` dan membaca `navigator`/`screen` di main thread, dan berkas vendor tidak boleh diubah atau dibungkus ulang.
 - `setTimeout(0)` setelah umpan balik: memindahkan biaya keluar dari task klik, tetapi task berikutnya tetap bisa menahan input atau frame berikutnya. Waktu senggang lebih tepat untuk kerja yang tidak mendesak.
 - `scheduler.postTask({ priority: 'background' })`: bagus, tetapi belum ada di semua browser target (Safari).
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** ....
+- **Hasil ukur (median 3 kali):** ....
+- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
+- **Efek samping yang muncul:** ....
+
+## P-14: Setiap huruf membangun kartu baru dan memuat gambar SVG-nya
+
+**Tiket terkait:** TK-1041
+**Tanggal dan hash commit entri ini:** 2-10-2026
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):** pengukuran awal commit P-13 (satu ulangan, laptop masih memakai baterai, trace 'diagnosis-S1-setelah-P-13.json.gz'): INP S1 608 ms, long task terlama 290 ms, 18 long task. Isi task terlama adalah frame yang memproses ketikan: 'set innerHTML', 'buatKartu', 'append', lalu Layout (65 layout, 679 ms) dan Recalculate Style (620 ms). Trace S5 dari commit yang sama menunjukkan setiap gambar produk yang tiba membuat dokumen SVG sendiri di main thread (task 'DocumentLoader::CommitNavigation' + parser + even 'readystatechange' ), -+20 ms pergambar pada CPU 4x.
+- **Dugaan mekanisme:** setiap huruf mengganti seluruh isi kisi dengan 24 kartu baru. Membuat dan menata 24 kartu (Style + Layout + Paint) memakan -+100-150 ms pada CPU 4x. Karena kartunya baru, sekitar 8 gambar dalam Jarak  lazy-load diminta lagi, dan masing-masing menambah -+20 ms kerja main thread saat tiba. Dengan ketikan tiap 200 ms, kerja satu huruf (-+250-350 ms) belum selesai ketika huruf berikutnya datang, sehingga huruf menunggu di antrean (input delay) dan INP naik. Gambar untuk hasil sementara ("s", "se", "sep"...) hampir pasti tidak pernah dilihat pengguna.
+- **Rencana perubahan:**
+
+1. Ukuran halaman kisi diturunkan dari 24 menjadi 12 kartu (6 baris setara 2.700 px di 412 px, masih lebih dari viewport + jarak lazy-load). Batch saat menggulir juga 12 kartu.
+2. Render yang dipicu pencarian menunda pemuatan gambar :'src' disimpan di 'data-src' dan baru dipasang 350 ms setelah render terakhir. Selama pengguna masih mengetik, tidak ada gambar baru yang diminta. Setelah berhenti,gambar hasil akhir dimuat. Kartu dari guliran dan render awal tetap langsung memasang 'src'.
+
+- **Prediksi terukur:**
+
+1. S1: kerja per huruf turun ke -+80-120 ms (CPU 4x). INP S1 turun dari ±600 ms ke =< 250 ms. Belum tentu =< 200 ms, karena setiap huruf tetap membangun 12 kartu dan menjalankan satu frame penuh di CPU 4x.
+2. Jumlah dokumen SVG yang dibuat selama S1 turun dari puluhan menjadi -+6-8 (hanya untuk hasil terakhir).
+3. Efek samping: gambar hasil pencarian muncul -+350 ms setelah pengguna berhenti mengetik (kotak berukuran tetap tampil lebih dulu). Menggulir memuat batch yang lebih kecil, jadi batch lebih sering ditambahkan.
+
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+
+1. Men debounce seluruh render pencarian (misal 300 ms): huruf tampil cepat, tetapi hasil tidak mengikuti ketikan sampai pengguna berhenti. Debounce 150 ms (yang diusulkan AI) tidak pernah menyatu pada ritme 200 ms per huruf.
+2. Menyimpan dan memakai ulang elemen kartu per id produk: menghindari membangun ulang kartu yang sama, tetapi kartu yang terlepas harus disinkronkan dengan harga voucher dan butuh batas memori. Lebih rumit untuk manfaat yang tumpang tindih dengan penundaan gambar.
 
 ### Sesudah perbaikan
 
