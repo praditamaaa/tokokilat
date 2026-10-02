@@ -90,6 +90,97 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
 
+
+## P-05: Pencarian menormalkan ulang teks 3000 produk di setiap huruf
+
+**Tiket terkait:** TK-1041
+**Tanggal dan hash commit entri ini:** 30-09-2026, hash dicatat di bagian "Sesudah"
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace:** setelah P-02 (trace `diagnosis-S1-setelah-P-02.json.gz`, pengukuran awal saat laptop
+  masih memakai baterai), `normalkan` di `pencarian.js` memakan **389 ms self** selama S1 (12 ketikan, ±32 ms per
+  ketikan). Micro-benchmark CPU 4x: menyaring 3000 produk dengan kata "sepatu" = **26,5 ms** bila teks
+  dinormalkan ulang, **4,6 ms** bila teks sudah dinormalkan sebelumnya (hasil sama: 106 produk).
+- **Dugaan mekanisme:** `cocok()` membangun string gabungan nama+merek+kategori+kota lalu menjalankan
+  `toLowerCase`, `normalize('NFD')`, dan dua `replace` regex untuk setiap produk di setiap huruf yang diketik.
+  Teks produk tidak pernah berubah, jadi hasilnya selalu sama. Semua kerja ini JS sinkron di task `input`
+  sebelum render.
+- **Rencana perubahan:** simpan teks pencarian yang sudah dinormalkan per produk di `Map` (dibuat saat pertama
+  dibutuhkan). Kata kunci dipecah sekali per pencarian, tidak sekali per produk.
+- **Prediksi terukur:** biaya penyaringan per ketikan turun dari ±26-32 ms menjadi **±5 ms** (CPU 4x). Ketikan
+  pertama tetap membayar ±26 ms untuk mengisi cache. Dampak ke INP S1 kecil (±25 ms per ketikan). Ini bukan
+  penyebab utama, tetapi murah dan tidak berisiko. Efek samping: memori tambahan ±3000 string pendek (±150 KB).
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:** membangun indeks kata (inverted index) atau
+  trie. Lebih cepat untuk data besar, tetapi 3000 produk × `includes` sudah < 5 ms, dan pencocokan substring
+  (misal "sepa" cocok dengan "sepatu") jadi lebih rumit.
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** ....
+- **Hasil ukur (median 3 kali):** ....
+- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
+- **Efek samping yang muncul:** ....
+
+---
+
+## P-06: `periksaGulir` di setiap scroll/touchmove/wheel dan listener sentuh non-pasif
+
+**Tiket terkait:** TK-1063 (utama), TK-1057 ("mau scroll juga tidak bisa"), TK-1041
+**Tanggal dan hash commit entri ini:** 39-09-2026, hash dicatat di bagian "Sesudah"
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace:** baseline S0: `periksaGulir` memakan **13.721 ms** di task render awal, termasuk satu
+  Layout paksa 11.721 ms di baris `window.scrollY` dan `getBoundingClientRect` untuk 3000 kartu. Setelah P-02
+  (pengukuran awal, laptop masih memakai baterai): S5 (usapan jari 10 detik, ±19.000 px) mencatat **42 frame > 50 ms
+  per 10 detik**, main thread sibuk 96%, dan **310 Layout paksa**. Di S1, `periksaGulir` total 620 ms.
+- **Dugaan mekanisme:**
+  1. `gulir.js` memasang `periksaGulir` pada `scroll`, `resize`, `touchmove`, dan `wheel`, sehingga satu gerakan
+     jari bisa menjalankannya 2-3 kali. Di dalamnya ada pola baca-tulis bergantian: `classList.toggle` dan
+     `bar.style.width` (tulis) disusul `scrollHeight` (baca → layout paksa). Lalu `getBoundingClientRect()` untuk
+     semua kartu, dan untuk kartu yang baru terlihat `classList.add` + `style.minHeight` (tulis), sehingga
+     `getBoundingClientRect` kartu berikutnya memaksa layout lagi (layout thrashing).
+  2. Setiap kali ada kartu baru terlihat, `Lacak.kirim('impression')` dipanggil langsung (±41 ms per panggilan pada
+     CPU 4x, karena SDK menghitung sidik jari 2 juta iterasi).
+  3. `touchstart`, `touchmove`, dan `wheel` didaftarkan `{ passive: false }` pada `#utama`. Compositor tidak boleh
+     menggulir sebelum main thread selesai menjalankan listener dan memastikan `preventDefault()` tidak dipanggil.
+     Guliran pun ikut antre di main thread yang sedang sibuk (task timer, frame berat), sehingga patah-patah.
+     Ini juga menjelaskan TK-1057: saat perhitungan voucher memblokir main thread, halaman bahkan tidak bisa digulir.
+- **Rencana perubahan:**
+  - Efek kartu muncul dan pencatatan impresi memakai IntersectionObserver (`rootMargin: 80px`, sama dengan logika
+    lama). Kartu baru didaftarkan saat dibuat; tidak ada lagi `getBoundingClientRect`, dan `style.minHeight`
+    dihapus (tinggi kartu sudah tetap sejak P-01).
+  - Bayangan header, tombol "Ke atas", dan bar progres baca diperbarui dari listener `scroll` yang **pasif** dan
+    dibatasi sekali per frame (requestAnimationFrame). Bar memakai `transform: scaleX()` (tanpa Layout). Tinggi
+    yang bisa digulir disimpan dan hanya dihitung ulang lewat ResizeObserver saat ukuran dokumen berubah.
+  - Listener `touchstart`/`touchmove`/`wheel` dihapus. Pencegahan pull-to-refresh diganti CSS
+    `overscroll-behavior-y: contain`, yang ditangani compositor tanpa JavaScript.
+- **Prediksi terukur:**
+  - S5: Layout paksa dari `gulir.js` turun dari ratusan menjadi **0**. Frame > 50 ms per 10 detik turun dari ±42
+    menjadi **±10-20**. Sisanya datang dari timer 10 ms yang memaksa layout (`offsetWidth`) dan animasi `top`/
+    `box-shadow` pada lencana kilat (P-07), serta panggilan SDK impresi (P-08).
+  - Karena tidak ada lagi listener sentuh non-pasif, guliran berjalan di compositor thread walaupun main thread
+    sibuk. Jarak gulir S5 untuk usapan yang sama tidak berkurang, dan bisa bertambah karena tidak ada usapan yang
+    tertahan.
+  - Efek samping: pull-to-refresh kini dicegah di seluruh halaman (sebelumnya hanya saat menarik di area
+    `#utama` pada posisi puncak). Impresi dicatat per batch IntersectionObserver, bukan per event gulir. Bentuk
+    datanya sama (array id produk).
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  - Tetap memakai listener `scroll`, tetapi dibatasi dengan rAF dan urutan baca-dulu-baru-tulis: layout paksa
+    berkurang, tetapi mengukur ratusan kartu tetap dilakukan di main thread setiap frame.
+  - CSS scroll-driven animation (`animation-timeline: scroll()`) untuk bar progres: sepenuhnya di compositor,
+    tetapi belum didukung semua browser target (misalnya Firefox) sehingga tetap butuh jalur JavaScript cadangan.
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** ....
+- **Hasil ukur (median 3 kali):** ....
+- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
+- **Efek samping yang muncul:** ....
+
+
+
 ## P-08: SDK analitik dipanggil di tengah interaksi, dengan payload riwayat 1,2 MB
 
 **Tiket terkait:** TK-1044, TK-1052, TK-1041, TK-1063
@@ -113,6 +204,8 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - Menjalankan SDK di Web Worker: SDK menulis ke `window.Lacak` dan membaca `navigator`/`screen` di main thread, dan berkas vendor tidak boleh diubah atau dibungkus ulang.
 - `setTimeout(0)` setelah umpan balik: memindahkan biaya keluar dari task klik, tetapi task berikutnya tetap bisa menahan input atau frame berikutnya. Waktu senggang lebih tepat untuk kerja yang tidak mendesak.
 - `scheduler.postTask({ priority: 'background' })`: bagus, tetapi belum ada di semua browser target (Safari).
+
+
 
 ### Sesudah perbaikan
 
