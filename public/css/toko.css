@@ -77,8 +77,12 @@ button { cursor: pointer; }
 
 /* ---------- kisi produk ---------- */
 .kisi { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 12px; }
-.kartu { position: relative; display: flex; flex-direction: column; background: var(--putih); border: 1px solid var(--garis); border-radius: 10px; overflow: hidden; opacity: 0; margin-top: 16px; transition: opacity .35s ease, margin-top .35s ease; }
-.kartu.terlihat { opacity: 1; margin-top: 0; }
+.kartu { position: relative; display: flex; flex-direction: column; background: var(--putih); border: 1px solid var(--garis); border-radius: 10px; overflow: hidden; opacity: 0; transform: translateY(16px); transition: opacity .35s ease, transform .35s ease;
+  /* kartu jauh dari layar dilewati untuk style/layout/paint (termasuk animasi lencananya); ukurannya diingat */
+  content-visibility: auto; contain-intrinsic-size: auto 440px;
+}
+/* translateY(0), bukan none: berganti antara ada/tanpa transform memicu Layout, mengubah nilainya cukup di compositor */
+.kartu.terlihat { opacity: 1; transform: translateY(0); }
 .kartu-media { display: block; background: var(--kabut); }
 .kartu-media img { display: block; width: 100%; height: auto; }
 .kartu-badan { display: flex; flex-direction: column; gap: 6px; padding: 10px; flex: 1; }

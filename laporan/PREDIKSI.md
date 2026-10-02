@@ -299,12 +299,20 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** 
-- **Hasil ukur (median 3 kali):** 
-- **Prediksi vs kenyataan:** 
-- **Efek samping yang muncul:** 
+- **Hash commit perbaikan:** 9448769
+- **Hasil ukur (median 3 kali):** dibanding P-08 pengukuran pagi (`data/P-08-pagi`). S2: ketukan → tombol berubah 147 → **99 ms** (ulangan 97-99; P-08:
+  141-187), INP 168 → 192 ms (ulangan 184-208; P-08: 168-248), long task 141 → 134 ms.
+- **Prediksi vs kenyataan:** Arah **sesuai**: umpan balik kini konsisten ±100 ms. Besarnya **meleset**. Diprediksi
+  task klik ±5-15 ms, INP < 100 ms, dan umpan balik < 30 ms. Kenyataannya umpan balik 99 ms dan INP ±190 ms, karena
+  sisa waktunya bukan di handler klik melainkan di input delay dan frame yang menggambar perubahan (pada CPU 4x). Di
+  trace akhir `S2-sesudah.json.gz` bagian terbesarnya adalah Layout yang dipicu hit test saat ketukan (LAPORAN
+  bagian 6). Trace per ulangan untuk versi antara tidak disimpan.
+- **Efek samping yang muncul:** Task senggang untuk menyimpan riwayat tidak terlihat sebagai long task di S2 (long
+  task terlama 134 ms, sama dengan sebelumnya). Uji fungsional "riwayat aktivitas: entri tersimpan, tidak ada data
+  lama hilang" lulus.
 
 ---
+
 
 
 ## P-15: Setiap frame gulir menghitung ulang style dan layout kartu yang tidak terlihat
