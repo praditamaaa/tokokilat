@@ -9,17 +9,26 @@ export function el(tag, kelas, teks) {
   return node;
 }
 
-export function formatRupiah(angka) {
-  const pemformat = new Intl.NumberFormat('id-ID', {
+// Pemformat dibuat sekali saja. Membuat Intl.NumberFormat (atau memanggil toLocaleString('id-ID'))
+// berarti negosiasi locale dan membangun pemformat ICU dari awal; di setiap kartu itu ±1 ms (CPU 4x).
+  const PEMFORMAT_RUPIAH = new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     maximumFractionDigits: 0,
   });
-  return pemformat.format(angka);
+  const PEMFORMAT_ANGKA = new Intl.NumberFormat('id-ID');
+
+export function formatRupiah(angka) {
+  return PEMFORMAT_RUPIAH.format(angka);
+}
+
+// Sama dengan angka.toLocaleString('id-ID'), tanpa membuat pemformat baru.
+export function formatAngka(angka) {
+  return PEMFORMAT_ANGKA.format(angka);
 }
 
 export function formatRibuan(angka) {
-  if (angka >= 1000) return (Math.floor(angka / 100) / 10).toLocaleString('id-ID') + ' rb';
+  if (angka >= 1000) return formatAngka(Math.floor(angka / 100) / 10) + ' rb';
   return String(angka);
 }
 

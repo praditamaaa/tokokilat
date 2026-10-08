@@ -105,6 +105,10 @@ button { cursor: pointer; }
   50% { top: 4px; box-shadow: 0 0 0 9px rgba(255, 212, 0, 0); }
 }
 
+.ujung-kisi { display: flex; justify-content: center; padding: 20px 0 4px; }
+.ujung-kisi[hidden] { display: none; }
+.ujung-kisi button { border: 1.5px solid var(--nila); background: var(--putih); color: var(--nila); border-radius: 8px; padding: 10px 16px; font-weight: 700; }
+
 .kosong { grid-column: 1 / -1; background: var(--putih); border: 1.5px dashed var(--garis); border-radius: 10px; padding: 28px; text-align: center; }
 
 /* ---------- panel keranjang ---------- */

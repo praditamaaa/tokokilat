@@ -1,0 +1,15 @@
+// Uji kesetaraan keluaran P-03: pemformat Intl yang disimpan vs dibuat ulang per panggilan.
+// Pemakaian: node laporan/skrip/uji-format.mjs
+// Bandingkan keluaran format lama (Intl baru per panggilan) vs pemformat tersimpan.
+const lamaRupiah = (a) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(a);
+const lamaRibuan = (a) => (a >= 1000 ? (Math.floor(a / 100) / 10).toLocaleString('id-ID') + ' rb' : String(a));
+const lamaAngka = (a) => a.toLocaleString('id-ID');
+const RUPIAH = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+const ANGKA = new Intl.NumberFormat('id-ID');
+const baruRupiah = (a) => RUPIAH.format(a);
+const baruRibuan = (a) => (a >= 1000 ? ANGKA.format(Math.floor(a / 100) / 10) + ' rb' : String(a));
+const baruAngka = (a) => ANGKA.format(a);
+let beda = 0, n = 0;
+for (let a = 0; a <= 3000000; a += (a < 20000 ? 1 : 97)) { n++; if (lamaRupiah(a) !== baruRupiah(a)) beda++; if (lamaRibuan(a) !== baruRibuan(a)) beda++; if (lamaAngka(a) !== baruAngka(a)) beda++; }
+for (let r = 3.6; r <= 5.0001; r += 0.1) { const x = Math.round(r * 10) / 10; n++; if (lamaAngka(x) !== baruAngka(x)) beda++; }
+console.log('nilai diuji', n, 'berbeda', beda, 'contoh', baruRupiah(1234500), baruRibuan(11987), baruAngka(4.5), baruAngka(2264));

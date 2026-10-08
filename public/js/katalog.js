@@ -83,16 +83,14 @@ function tambahKartu(jumlah) {
   const mulai = keadaan.dirender;
   const akhir = Math.min(mulai + jumlah, daftar.length);
   const potongan = document.createDocumentFragment();
-  for (let i = mulai; i < akhir; i++) {
-    const kartu = buatKartu(daftar[i]);
-    amatiKartu(kartu);
-    potongan.append(kartu);
-  }
+  for (let i = mulai; i < akhir; i++) potongan.append(buatKartu(daftar[i]));
   const pertama = potongan.firstElementChild;
   keadaan.dirender = akhir;
   $('#kisi').append(potongan);
 
+  samakanTinggiJudul();
   perbaruiUjung();
+  periksaGulir();
   return pertama;
 }
 
@@ -100,7 +98,7 @@ function perbaruiUjung() {
   const ujung = $('#ujung-kisi');
   const sisa = keadaan.ditampilkan.length - keadaan.dirender;
   ujung.hidden = sisa <= 0;
-  $('#muat-lagi').textContent = 'Tampilkan ' + Math.min(UKURAN_HALAMAN, sisa) + ' produk berikutnya (' + formatAngka(sisa) + ' lagi)';
+   $('#muat-lagi').textContent = 'Tampilkan ' + Math.min(UKURAN_HALAMAN, sisa) + ' produk berikutnya (' + formatAngka(sisa) + ' lagi)';
   // IntersectionObserver hanya melapor saat status berpotongan berubah. Penanda diamati ulang supaya,
   // bila masih dekat layar setelah kartu ditambah, halaman berikutnya ikut dibangun pada frame berikutnya.
   pengamatUjung.unobserve(ujung);

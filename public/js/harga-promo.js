@@ -1,7 +1,7 @@
 // Voucher: menghitung harga promo untuk setiap produk.
 // Aturan promo bertingkat + simulasi cicilan ditentukan tim bisnis.
 
-import { $, hargaSetelahDiskon, tampilkanToast } from './util.js';
+import { $, formatAngka, hargaSetelahDiskon, tampilkanToast } from './util.js';
 import { keadaan, perbaruiHargaVoucherDiKartu } from './katalog.js';
 import * as analitik from './analitik.js';
 
@@ -69,7 +69,7 @@ async function terapkanVoucher(kode) {
 
   perbaruiHargaVoucherDiKartu();
   progres.hidden = true;
-  tampilkanToast('Voucher ' + kode + ' dipakai di ' + keadaan.hargaVoucher.size.toLocaleString('id-ID') + ' produk.');
+  tampilkanToast('Voucher ' + kode + ' dipakai di ' + formatAngka(keadaan.hargaVoucher.size) + ' produk.');
   analitik.kirim('apply_voucher', { kode, jumlah: keadaan.hargaVoucher.size });
 }
 
