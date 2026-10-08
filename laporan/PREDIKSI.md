@@ -113,7 +113,6 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
 
-
 ## P-04: Memaksa layout sinkron 24 kali per render
 
 **Tiket terkait:** TK-1041, TK-1081
@@ -157,6 +156,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Alternatif yang dipertimbangkan dan alasan tidak dipilih:** membangun indeks kata (inverted index) atau trie. Lebih cepat untuk data besar, tetapi 3000 produk × `includes` sudah < 5 ms, dan pencocokan substring (misal "sepa" cocok dengan "sepatu") jadi lebih rumit.
 
 ### Sesudah perbaikan
+
 - **Hash commit perbaikan:** ....
 - **Hasil ukur (median 3 kali):** ....
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
@@ -505,6 +505,55 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ---
 
+## P-16: Setiap frame gulir menghitung ulang style dan layout kartu yang tidak terlihat
+
+**Tiket terkait:** TK-1041
+**Tanggal dan hash commit entri ini:** 2-10-2026
+
+### Sebelum perbaikan
+
+- **Yang teramati:** commit P-15, laptop sudah tersambung listrik, pengukuran awal 1-2 ulangan: INP S1 528-592 ms.*
+  Interaksi terburuk adalah ketikan pertama (590 ms): task keydown 189 ms berisi `FunctionCall` 141 ms, termasuk
+  membangun cache teks pencarian (`normalkan` 71 ms). Frame berikutnya berisi **Paint 227-230 ms** yang merekam
+  ulang layer dokumen setinggi -+4.090 px. Ketikan berikutnya 400-420 ms, dengan setiap frame berisi Layout
+  32-40 ms untuk -+190 objek kotor (12 kartu baru). Eksperimen A/B menunjukkan `content-visibility` (P-15) membantu
+  (INP 528 vs 896 ms tanpa itu), tetapi biaya menata dan menggambar kartu baru tetap dominan.
+- **Dugaan mekanisme:**
+  1. setiap huruf mengosongkan `#kisi` (`innerHTML = ''`) lalu membangun 12 elemen kartu baru.
+     Kartu untuk produk yang sama dengan render sebelumnya pun dibuat ulang, sehingga Blink kehilangan hasil
+     style/layout/paint yang sudah di-cache untuk kartu itu dan harus menata dan merekam semuanya lagi (tahap Style,
+     Layout, dan Paint). Gambar di kartu baru juga dimulai dari kosong. Saat pengguna menghapus huruf, hasilnya kembali
+     ke daftar yang sudah pernah tampil, tetapi semuanya tetap dibangun dari nol. Cache teks pencarian (P-05) baru
+     dibangun pada ketikan pertama, tepat di task interaksi.
+- **Rencana perubahan:**
+
+1. Elemen kartu disimpan per id produk (Map, maks. 600 kartu, yang tertua dibuang). Render menyusun ulang kisi dengan `replaceChildren()` memakai elemen yang sudah ada bila produknya sama. Hanya produk baru yang dibangun. Baris harga voucher disegarkan saat elemen dipakai ulang, supaya tidak basi.
+2. Cache teks pencarian dibangun di waktu senggang setelah produk dimuat, bukan saat ketikan pertama.
+
+- **Prediksi terukur:**
+
+1. S1: ketikan yang hasilnya sebagian sama dengan render sebelumnya (terutama saat menghapus huruf) hanya membangun kartu yang benar-benar baru. Kerja Layout/Paint per ketikan turun ±30-50%. INP S1 turun dari -+530-590 ms menjadi -+250-350 ms. Target 200 ms mungkin belum tercapai pada CPU 4x karena setiap huruf tetap memicu satu frame
+   penuh dengan kartu baru.
+2. Efek samping: memori untuk hingga 600 kartu yang terlepas dari DOM (-+15 node per kartu). Kartu yang dipakai ulang tidak memutar ulang efek muncul (efek tetap ada saat kartu pertama kali tampil).
+
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+
+men-debounce render pencarian (hasil tidak mengikuti ketikan), dan virtualisasi dengan daur ulang node berdasarkan posisi (elemen dipakai untuk produk lain, sehingga gambar dan teksnya tetap diganti dan tetap memicu Layout/Paint).
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** 28ed706
+- **Hasil ukur (median 3 kali):** dibanding P-14. S5: frame > 50 ms 62,7 → 69 per 10 detik (62-84), sibuk 87,4% →
+  87,4%, long task 118 → 85 ms, frame terburuk 162 → 133 ms. S6 sibuk 52,9% → **37,7%**. INP S1 496 → 360 ms
+  (232-432).
+- **Prediksi vs kenyataan:** Frame lambat S5 turun 30-40%: **meleset**, tidak berubah. Frame gulir tetap berisi
+  kerja untuk kartu yang baru mendekati layar (sekarang ditata saat itu), dan dokumen SVG gambar. Recalculate Style
+  S6 turun: **sesuai** (sibuk turun 15 poin). Yang tidak diprediksi: INP S1 membaik, karena kartu di luar layar
+  tidak lagi ikut ditata dan digambar di setiap huruf.
+- **Efek samping yang muncul:** CLS tetap 0 (tinggi perkiraan 440 px tidak menimbulkan pergeseran yang terlihat).
+  Harga yang baru terlihat di trace akhir: hit test saat ketukan S2 bisa memaksa Layout kartu yang dilewati
+  `content-visibility` (131 ms pada trace S2 pengukuran pagi; 44 ms pada trace akhir `S2-sesudah.json.gz`).
+
 ## P-17: Gambar dimuat dan digambar di tengah guliran cepat
 
 **Tiket terkait:** TK-1063, TK-1081
@@ -513,11 +562,11 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 ### Sebelum perbaikan
 
 - **Yang teramati:** commit P-15, laptop sudah tersambung listrik, pengukuran awal: S5 **82-91 frame > 50 ms per
-    10 detik**, main thread sibuk ±88-92%, jarak gulir ±28.800 px. Trace S5: 141 task frame gulir (4,7 detik, rata-rata
-    33 ms) dan **96 task dokumen SVG gambar (1,56 detik)**, ditambah PaintImage ±0,2 detik. Eksperimen A/B dengan
-    dekorasi `.kaki-hias` (blur 60 px + box-shadow besar) dimatikan: S5 turun ke ±60 frame > 50 ms. Karena daftar
-    kini pendek, kaki halaman selalu berada di dalam area yang direkam ulang (±4.000 px) setiap kali kartu baru
-    ditambahkan.
+  10 detik**, main thread sibuk ±88-92%, jarak gulir ±28.800 px. Trace S5: 141 task frame gulir (4,7 detik, rata-rata
+  33 ms) dan **96 task dokumen SVG gambar (1,56 detik)**, ditambah PaintImage ±0,2 detik. Eksperimen A/B dengan
+  dekorasi `.kaki-hias` (blur 60 px + box-shadow besar) dimatikan: S5 turun ke ±60 frame > 50 ms. Karena daftar
+  kini pendek, kaki halaman selalu berada di dalam area yang direkam ulang (±4.000 px) setiap kali kartu baru
+  ditambahkan.
 - **Dugaan mekanisme:** selama pengguna mengibaskan daftar, ±13 kartu per detik masuk ke jarak lazy-load. Setiap
   gambar yang tiba membuat dan menata dokumen SVG di main thread (±20 ms pada CPU 4x), lalu harus direkam
   (PaintImage). Kerja ini mengisi celah antar-frame, sehingga frame gulir berikutnya terlambat. Hampir semua gambar
@@ -548,8 +597,9 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
   - Menurunkan jarak lazy-load: tidak mengurangi jumlah gambar yang lewat saat dikibas, hanya menunda sedikit.
 
 ### Sesudah perbaikan
+
 - **Hash commit perbaikan:** 90c84a7
-- **Hasil ukur (median 3 kali):** dibanding P-16. Keduanya diukur pada malam 26-09 (`data/P-16-malam`, `data/P-17`).
+- **Hasil ukur (median 3 kali):** dibanding P-16. Keduanya diukur pada F26-09 (`data/P-16-malam`, `data/P-17`).
   S5: frame > 50 ms 1 → 3 per 10 detik (ulangan 1/1/46 → 2/5/3), frame main thread 50 → 49 per detik, frame terburuk
   58 → 72 ms, sibuk 62% → 67,5%. INP S1 120 → **72 ms** (104-184 → 72-104). Permintaan gambar S0 8 → 6. INP S2 72 →
   80 ms, INP S4 80 → 80 ms. S6 dengan alat ukur: sibuk 25% → 29%.
