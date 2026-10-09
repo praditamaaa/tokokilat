@@ -79,10 +79,10 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
+- **Hash commit perbaikan:** 16b93c7dbb9acdd83821cb4b80b39039fd22e8a4
+- **Hasil ukur (median 3 kali):** dibanding P-01. Long task saat memuat 19.391 -> 1.535 ms (ulangan 1.059-1.646). S6: frame > 50 ms 43 -> 0 per 10 detik, frame main thread 4,4 -> 55,7 per detik, sibuk 99,8% -> 96,7%. Dibanding kode awal (P-01 tidak mengukur S1-S5): INP S1 64.302 -> 1.464 ms (ulangan 688-2.168), voucher selesai 51,2 -> 5,6 detik, waktu menggulir S5 32,4 -> 10,3 detik.
+- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?Long task memuat =< 1,5 detik: tepat di batas (1,5 detik). INP S1 -+0,5-1 detik:  sedikit lebih buruk (1,46 detik; rentangnya 0,7-2,2), sisanya layout paksa `samakanTinggiJudul` dan `periksaGulir` di setiap render (P-04, P-06). S6 sibuk =< 50%: meleset, tetap 96,7%. Frame lambatnya hilang karena frame kini murah, tetapi jumlah frame naik 12 kali (timer 10 ms, animasi, loop rAF alat ukur membuat frame di setiap vsync). Kami keliru mengira sibuk sebanding dengan biaya layout; yang terjadi, banyak frame kecil menggantikan sedikit frame besar.
+- **Efek samping yang muncul:** CLS 0,139-0,141 (banner, sama seperti P-01). Menambah batch saat menggulir: S5 kiniterukur 8,5 frame main thread per detik dengan 77,8 frame > 50 ms per 10 detik (S5 baru diukur mulai P-02). Ctrl+F dan scrollbar sesuai prediksi (tidak diukur).
 
 ## P-03: Pemformat angka dibuat ulang disetiap panggilan
 
@@ -109,9 +109,19 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 ### Sesudah perbaikan
 
 - **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
+- **Hasil ukur (median 3 kali):** dibanding P-02. Long task saat memuat 1.535 -> 1.161 ms
+  (ulangan 945-1.358).INP S1 1.464 -> 2.056 ms (ulangan 1.168-2.544; P-02:
+  688-2.168). Long task S1 644 -> 870 ms. Micro-benchmark `formatRupiah` 3000x
+  (CPU 4x): 646 -> 3,5 ms.
+- **Prediksi vs kenyataan:** Penurunan saat memuat (374 ms) lebih besar daripada prediksi
+  60-100 ms per render. Prediksi "belum cukup untuk INP S1" benar,
+  tetapi median INP S1 justru naik. Rentang ketiga ulangan tumpeng tindih dengan
+  P-02, dan biaya S1 di versi ini didominasi layout paksa yang bervariasi, jadi
+  kami menganggap kenaikan itu variasi, bukan efek P-03.
+- **Efek samping yang muncul:** Inisialisasi
+  ICU pindah ke evaluasi modul (sesuai prediksi, tidak diukur terpisah). Satu
+  dari tiga ulangan S0 mendapat CLS 0,615 (pergeseran yang bergantung waktu,
+  lihat P-13).
 
 ## P-04: Memaksa layout sinkron 24 kali per render
 
@@ -138,9 +148,19 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 ### Sesudah perbaikan
 
 - **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
+- **Hasil ukur (median 3 kali):** dibanding P-03. INP S1 2.056 -> 552 ms (ulangan 528-960).
+  Long task S1 870 -> 321 ms. Layout paksa selama S1 497 -> 177. Long task
+  saat memuat 1.161 -> 802 ms.
+- **Prediksi vs kenyataan:** Layout paksa dari `katalog.js` -> 0: sesuai (sisa 177
+  berasal dari `periksaGulir` dan timer hitung mundur/teks berjalan, hilang di
+  P-06/P-07). INP S1 diprediksi 1-2 detik, kenyataannya lebih baik (552 ms). Kami
+  meremehkan biaya tiap layout paksa: setiap layout menata ulang kisi dan seluruh
+  halaman yang juga sedang dianimasikan.
+- **Efek samping yang muncul:** Elipsis
+  pada -+1,7% judul sesuai prediksi (uji fungsional: nama lengkap tetap ada di DOM).
+  CLS 0,614-0,615 di dua dari tiga ulangan. Ini bukan akibat `line-clamp`:
+  pergeseran yang sama muncul acak di P-03 dan P-06, bergantung pada apakah frame
+  pertama tergambar sebelum data produk tiba (P-13).
 
 ## P-05: Menormalkan pencarian produk
 
