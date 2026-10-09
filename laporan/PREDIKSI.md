@@ -458,9 +458,19 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 ### Sesudah perbaikan
 
 - **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
+- **Hasil ukur (median 3 kali):** dibanding
+  P-13. INP S1 488 ->496 ms (352-632), long task S1 244 ->267 ms. S4 INP 272
+  ->168 ms, long task S4 152 ->83 ms. S5 frame > 50 ms 79,6 ->62,7
+  per 10 detik. Permintaan gambar S0 tetap 8.
+- **Prediksi vs kenyataan:** INP S1 ≤ 250 ms: meleset, tidak berubah. Setiap huruf memang
+  hanya membangun 12 kartu, tetapi kartu untuk produk yang sama tetap dibuat
+  ulang, dan Paint dokumen -+230 ms tetap ada. Akar sebenarnya baru ditemukan dan
+  diperbaiki di P-16. Yang tidak diprediksi tetapi membaik: S4 (render pencarian
+  di tengah voucher lebih murah) dan S5.
+- **Efek samping yang muncul:** Gambar hasil pencarian muncul setelah pengguna berhenti
+  mengetik (uji fungsional "gambar hasil terpasang setelah berhenti
+  mengetik" lulus). Batch saat menggulir lebih sering, tanpa kenaikan frame lambat
+  S5.
 
 ## P-15: Setiap frame gulir menghitung ulang style dan layout kartu yang tidak terlihat
 
