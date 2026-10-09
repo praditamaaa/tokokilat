@@ -17,7 +17,7 @@ export async function muatProduk() {
   return keadaan.semuaProduk;
 }
 
-function buatKartu(produk) {
+function buatKartu(produk, tundaGambar) {
   const kartu = el('article', 'kartu');
   kartu.dataset.id = produk.id;
 
@@ -33,7 +33,9 @@ function buatKartu(produk) {
   // Diisi sebelum src: gambar baru diunduh saat mendekati layar, bukan 3000 sekaligus.
   gambar.loading = 'lazy';
   gambar.decoding = 'async';
-  gambar.src = produk.gambar;
+  // Saat pengguna masih mengetik, alamat gambar ditahan dulu (lihat pasangGambarTertunda).
+  if (tundaGambar) gambar.dataset.src = produk.gambar;
+  else gambar.src = produk.gambar;
   gambar.alt = produk.nama;
   media.append(gambar);
 
@@ -72,18 +74,37 @@ function buatKartu(produk) {
 // mengukur judul dari JavaScript. Mengukur (offsetHeight) setelah menulis style.height memaksa layout
 // sinkron seluruh halaman di setiap judul.
 
-// Kartu dibangun bertahap: mula-mula satu halaman (24 kartu), halaman berikutnya baru dibangun saat
-// penanda #ujung-kisi mendekati layar. Membangun 3000 kartu sekaligus membuat satu task puluhan detik,
-// dan setiap Layout sesudahnya harus menata grid 3000 item.
-const UKURAN_HALAMAN = 24;
+// Kartu dibangun bertahap: mula-mula satu halaman (12 kartu = 6 baris, lebih dari satu layar plus
+// jarak lazy-load), halaman berikutnya baru dibangun saat penanda #ujung-kisi mendekati layar.
+// Membangun 3000 kartu sekaligus membuat satu task puluhan detik, dan setiap Layout sesudahnya harus
+// menata grid 3000 item.
+const UKURAN_HALAMAN = 12;
 let pengamatUjung = null;
 
-function tambahKartu(jumlah) {
+// Setiap gambar produk (SVG) yang tiba membuat dokumen SVG sendiri di main thread (±20 ms pada CPU 4x).
+// Selama pengguna mengetik, hasil sementara berganti tiap huruf dan gambarnya tidak pernah sempat dilihat,
+// jadi alamat gambar baru dipasang setelah tidak ada render pencarian selama 350 ms.
+const JEDA_GAMBAR_MS = 350;
+let pewaktuGambar = null;
+
+function pasangGambarTertunda() {
+  pewaktuGambar = null;
+  for (const gambar of $('#kisi').querySelectorAll('img[data-src]')) {
+    gambar.src = gambar.dataset.src;
+    gambar.removeAttribute('data-src');
+  }
+}
+
+function tambahKartu(jumlah, tundaGambar = false) {
   const daftar = keadaan.ditampilkan;
   const mulai = keadaan.dirender;
   const akhir = Math.min(mulai + jumlah, daftar.length);
   const potongan = document.createDocumentFragment();
-  for (let i = mulai; i < akhir; i++) potongan.append(buatKartu(daftar[i]));
+  for (let i = mulai; i < akhir; i++) {
+    const kartu = buatKartu(daftar[i], tundaGambar);
+    amatiKartu(kartu);
+    potongan.append(kartu);
+  }
   const pertama = potongan.firstElementChild;
   keadaan.dirender = akhir;
   $('#kisi').append(potongan);
@@ -117,7 +138,7 @@ function siapkanUjung() {
   });
 }
 
-export function renderProduk(daftar, jumlahAwal = UKURAN_HALAMAN) {
+export function renderProduk(daftar, { tundaGambar = false } = {}) {
   siapkanUjung();
   const kisi = $('#kisi');
   keadaan.ditampilkan = daftar;
@@ -130,8 +151,10 @@ export function renderProduk(daftar, jumlahAwal = UKURAN_HALAMAN) {
     kisi.append(kosong);
   }
 
-  tambahKartu(Math.max(jumlahAwal, UKURAN_HALAMAN));
+  tambahKartu(UKURAN_HALAMAN, tundaGambar);
   $('#ringkasan').textContent = formatAngka(daftar.length) + ' produk ditampilkan';
+  clearTimeout(pewaktuGambar);
+  pewaktuGambar = tundaGambar ? setTimeout(pasangGambarTertunda, JEDA_GAMBAR_MS) : null;
 }
 
 // Harga voucher baru: bangun ulang sebanyak kartu yang sudah tampil, supaya posisi gulir pengguna tetap.

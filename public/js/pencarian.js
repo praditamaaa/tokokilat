@@ -42,7 +42,8 @@ const PEMBANDING = {
   rating: (a, b) => b.rating - a.rating || b.terjual - a.terjual,
 };
 
-export function terapkanSaringan() {
+// tundaGambar: dipakai saat mengetik, supaya gambar hasil sementara tidak dimuat di setiap huruf.
+export function terapkanSaringan({ tundaGambar = false } = {}) {
   const kunci = normalkan(saringan.kata);
   const kata = kunci.split(' ');
   let hasil = keadaan.semuaProduk.filter((p) => {
@@ -51,7 +52,7 @@ export function terapkanSaringan() {
     return true;
   });
   if (PEMBANDING[saringan.urut]) hasil = hasil.slice().sort(PEMBANDING[saringan.urut]);
-  renderProduk(hasil);
+  renderProduk(hasil, { tundaGambar });
 
   // Event "search" dikirim sekali, 1 detik setelah pengguna berhenti mengetik (kata & jumlah hasil akhir),
   // bukan di setiap huruf: setiap panggilan SDK memakan ±41 ms di main thread.
@@ -67,7 +68,7 @@ export function pasangPencarian() {
   const kolom = $('#kolom-cari');
   kolom.addEventListener('input', () => {
     saringan.kata = kolom.value;
-    terapkanSaringan();
+    terapkanSaringan({ tundaGambar: true });
   });
 
   $('#pilih-urut').addEventListener('change', (e) => {
