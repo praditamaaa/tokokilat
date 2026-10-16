@@ -361,7 +361,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** 
+- **Hash commit perbaikan:** 644ca23
 - **Hasil ukur (median 3 kali):** dibanding P-08 pengukuran pagi (`data/P-08-pagi`). S2: ketukan → tombol berubah 147 → **99 ms** (ulangan 97-99; P-08:
   141-187), INP 168 → 192 ms (ulangan 184-208; P-08: 168-248), long task 141 → 134 ms.
 - **Prediksi vs kenyataan:** Arah **sesuai**: umpan balik kini konsisten ±100 ms. Besarnya **meleset**. Diprediksi
@@ -417,10 +417,15 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** 
-- **Hasil ukur (median 3 kali):** 
-- **Prediksi vs kenyataan:** 
-- **Efek samping yang muncul:** 
+- **Hash commit perbaikan:**
+- **Hasil ukur (median 3 kali):** dibanding P-09. S3: pesanan dari 3 ketukan cepat 3 → **1** (ketiga ulangan).
+  Perubahan tampilan pertama 498 ms ("Dipesan ✓", setelah respons server) → **84 ms** ("Memproses…", ulangan
+  80-104). INP S3 64 → 80 ms (ulangan 72-328).
+- **Prediksi vs kenyataan:** Tepat 1 pesanan: **sesuai**. INP < 200 ms: **sesuai** (median). Umpan balik < 50 ms:
+  **meleset** (84 ms), karena teks berubah di task klik tetapi baru terlihat di frame berikutnya, yang pada CPU 4x
+  ikut menunggu input delay dan presentasi.
+- **Efek samping yang muncul:** Satu ulangan INP 328 ms (variasi; ulangan lain 72-80 ms). Uji fungsional "pembelian
+  berikutnya setelah selesai tetap bisa" lulus. Batasan satu tab tetap berlaku (rekomendasi idempotensi ke backend).
 
 ---
 
