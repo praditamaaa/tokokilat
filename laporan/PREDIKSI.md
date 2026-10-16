@@ -335,7 +335,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:**
+- **Hash commit perbaikan:** ff6ed81
 - **Hasil ukur (median 3 kali):** dibanding P-06; keduanya diukur ulang malam 26-09 dalam kondisi yang sama (lihat
   Catatan metode). S6 (dengan alat ukur): sibuk 91,9% → **39,4%** (29-40), layout paksa 738 → **0**, `Timer Fired`
   1.331 → **20** per 10 detik, frame > 50 ms tetap 0. S5: frame > 50 ms 48,8 → **10,9** per 10 detik (42-56 → 2-11),
