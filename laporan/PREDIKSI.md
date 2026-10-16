@@ -6,6 +6,23 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ---
 
+
+## P-01: [judul singkat masalah]
+
+**Tiket terkait:** TK-....
+**Tanggal dan hash commit entri ini:** ....
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):** durasi, di track apa, fungsi apa yang dominan di bottom-up.
+- **Dugaan mekanisme:** jelaskan memakai istilah event loop (task, microtask, rendering opportunity)
+  atau tahap pipeline (JS, Style, Layout, Paint, Composite).
+- **Rencana perubahan:** ....
+- **Prediksi terukur:** "Setelah perubahan, [metrik] turun dari ... menjadi sekitar ..., karena ...".
+  Sertakan juga prediksi efek samping: apa yang mungkin menjadi *lebih buruk*?
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:** ....
+  ==============================================================
+
 ## P-01: 3000 gambar diminta sekaligus dan tanpa ukuran
 
 **Tiket terkait:** TK-1081 (utama), TK-1078, TK-1070
@@ -107,7 +124,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 2. Memoisasi string per nilai harga (Map) dapat menambah memori string dan kompleksitas, sedangkan 'format()' pada performat tersimpan sudah -+ 5 microsecond.
 
 ### Sesudah perbaikan
-
+me
 - **Hash commit perbaikan:** 16b93c7dbb9acdd83821cb4b80b39039fd22e8a4
 - **Hasil ukur (median 3 kali):** dibanding P-02. Long task saat memuat 1.535 -> 1.161 ms
   (ulangan 945-1.358).INP S1 1.464 -> 2.056 ms (ulangan 1.168-2.544; P-02:
@@ -260,6 +277,79 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Efek samping yang muncul:** Pull-to-refresh kini dicegah di seluruh halaman lewat `overscroll-behavior-y`
   (sesuai prediksi). Impresi dikirim per batch IntersectionObserver (uji fungsional impresi lulus).
 
+## P-07: Timer 10 ms dan animasi yang memicu Layout/Paint di setiap frame
+
+**Tiket terkait:** TK-1070 (utama), TK-1063
+**Tanggal dan hash commit entri ini:** 16-10-2026
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace:** S6 (diam 10 detik, tanpa sentuhan) setelah P-01/P-02 (pengukuran awal, laptop masih
+  memakai baterai): main thread sibuk **94-99%**, Layout ±2 detik per 10 detik, 10-25 frame > 50 ms, dan pada commit
+  P-02 **314 Layout paksa** dalam 10 detik diam. Di trace S1 setelah P-02: 83 task "Timer Fired" dalam ±9 detik dan
+  `get offsetWidth` 173 ms self (dari `promo.js`). Di kode awal, S6 dengan 300 produk juga sibuk 97% dengan
+  83 frame > 50 ms.
+- **Dugaan mekanisme:**
+  1. Hitung mundur memakai `setInterval(10 ms)`. Setiap tick menulis 4 `textContent` (layout kotor) lalu membaca
+     `wadah.offsetWidth` (layout paksa), kemudian menulis `garis.style.width` (layout kotor lagi untuk frame).
+     Itu 100 task per detik untuk layar 60 Hz. Angka perseratus detik yang berubah tiap 10 ms pun tidak mungkin
+     tergambar lebih dari 60 kali per detik.
+  2. Teks berjalan memakai `setInterval(10 ms)` yang membaca `offsetWidth` dan menulis `style.left`. `left` adalah
+     properti layout, jadi setiap tick berarti Style + Layout + Paint.
+  3. `.lencana-kilat` dianimasikan tanpa henti pada `top` (tahap Layout) dan `box-shadow` (tahap Paint). Animasi
+     properti ini tidak bisa dijalankan compositor, jadi main thread harus menghitung style, layout, dan paint di
+     setiap frame selama ada satu saja produk kilat di DOM.
+  4. Efek kartu muncul menganimasikan `margin-top` (Layout) selama 350 ms untuk setiap kartu yang masuk layar.
+  Akibatnya main thread tidak pernah sempat diam dan idle, sehingga CPU tidak pernah turun ke keadaan hemat (HP
+  panas, baterai turun: TK-1070), dan setiap frame yang sudah berat bersaing dengan input dan guliran (TK-1063).
+- **Rencana perubahan:**
+  - Hitung mundur: jam, menit, detik, dan garis diperbarui **sekali per detik** tepat saat detik berganti
+    (`setTimeout` berantai). Garis memakai `transform: scaleX()` (tanpa Layout). Angka perseratus detik tetap ada
+    sebagai "gulungan" 99…00 yang digeser animasi `transform` dengan `steps(100)` selama 1 detik (Web Animations
+    API), sehingga berjalan di compositor. Posisinya disinkronkan dengan jam saat mulai dan saat kembali terlihat.
+  - Teks berjalan: `@keyframes` pada `transform: translateX()` (compositor). JS hanya menghitung jarak dan durasi
+    lewat ResizeObserver, dengan kecepatan tetap 100 px/detik seperti versi lama.
+  - Lencana kilat: gerak naik-turun pakai `transform`, dan denyut cahaya pakai `::after` yang dianimasikan
+    `opacity` + `transform: scale()` (keduanya properti compositor).
+  - Kartu muncul: `opacity` + `transform: translateY()` menggantikan `margin-top`.
+  - Animasi flash sale dijeda saat bagiannya di luar layar (IntersectionObserver). Semua animasi berhenti bila
+    pengguna memilih `prefers-reduced-motion`.
+- **Prediksi terukur:**
+  - S6: main thread sibuk turun dari ±95% menjadi **< 5%**. Yang tersisa adalah 1 task per detik untuk teks hitung
+    mundur, loop rAF alat ukur, dan paint kecil area angka. Task "Timer Fired" turun dari ±100 per detik menjadi
+    ±1 per detik. Layout paksa di S6 **0**. Frame > 50 ms **≤ 2 per 10 detik**.
+  - S5: frame > 50 ms turun lagi (sisa dari P-06). Target ≤ 2 per 10 detik mungkin belum tercapai karena panggilan
+    SDK impresi (±41 ms per batch) masih di main thread (P-08).
+  - Efek samping: animasi compositor tetap membuat compositor/GPU menggambar frame (bukan nol energi). Layer
+    komposit bertambah satu per lencana kilat yang ada di DOM (memori GPU). Gulungan perseratus detik yang tidak
+    bisa dibaca per 10 ms kini benar-benar hanya hiasan visual.
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  - Mengganti `setInterval` dengan `requestAnimationFrame` untuk hitung mundur: tick turun ke 60 per detik dan
+    otomatis berhenti di tab tersembunyi, tetapi main thread tetap bekerja setiap frame. Tidak mendekati nol.
+  - Menghapus angka perseratus detik: paling hemat, tetapi mengubah fitur hitung mundur (dilarang aturan 4).
+  - `will-change` pada lencana tanpa mengganti properti yang dianimasikan: tidak membantu, karena `top` dan
+    `box-shadow` tetap harus dihitung main thread.
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** ff6ed81
+- **Hasil ukur (median 3 kali):** dibanding P-06; keduanya diukur ulang malam 26-09 dalam kondisi yang sama (lihat
+  Catatan metode). S6 (dengan alat ukur): sibuk 91,9% → **39,4%** (29-40), layout paksa 738 → **0**, `Timer Fired`
+  1.331 → **20** per 10 detik, frame > 50 ms tetap 0. S5: frame > 50 ms 48,8 → **10,9** per 10 detik (42-56 → 2-11),
+  frame main thread 24 → 44 per detik, layout paksa 714 → 29, sibuk 92,8% → 68,7%. INP S1 424 → 192 ms (rentang
+  160-848 → 136-312).
+- **Prediksi vs kenyataan:** Timer ±100 → ±1 per detik: **sesuai** (20 per 10 detik termasuk timer lain). Layout
+  paksa S6 0: **sesuai**. Frame > 50 ms S6 ≤ 2: **sesuai** (0). S6 sibuk < 5%: **meleset** bila diukur dengan alat
+  ukur (39%), karena loop rAF alat ukur memaksa frame di setiap vsync. S5 turun lagi: **sesuai, dan jauh lebih
+  besar** daripada perkiraan (49 → 11). Setelah P-06, biaya terbesar setiap frame gulir ternyata Layout/Paint dari
+  animasi `top`/`box-shadow` lencana dan timer 10 ms, bukan panggilan SDK impresi seperti dugaan kami.
+- **Efek samping yang muncul:** Uji fungsional untuk hitung mundur (sisa waktu benar dan berjalan), angka perseratus
+  detik yang bergerak, teks berjalan, dan lencana beranimasi lulus. Layer komposit tambahan tidak diukur. CLS 0,137
+  di ketiga ulangan (banner, ditangani P-13).
+
+---
+
+
 ## P-08: SDK analitik dipanggil di tengah interaksi, dengan payload riwayat 1,2 MB
 
 **Tiket terkait:** TK-1044, TK-1052, TK-1041, TK-1063
@@ -295,67 +385,10 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Efek samping yang muncul:**
 - Event tiba 0-3 detik lebih lambat, dan ketujuh jenis event tetap terkirim (uji fungsional).pengukuran pagi untuk commit yang sama (`data/P-08-pagi`) memberi S5 79-89 frame > 50 ms per 10 detik, 20 kali lipat pengukuran malam. Perbedaan ini bukan efek P-08, melainkan kondisi mesin (Catatan metode). Sehingga perbandingan S5 hanya sah di dalam satu jendela pengukuran
 
-## P-11: Perhitungan Voucher "async" tetap satu task panjang tanpa kesempatan menggambar
-
-**Tiket terkait:** TK-1057 (utama), TK-1041 (mengetik saat voucher dihitung)
-**Tanggal dan hash commit entri ini: 02-10-2026**
-
-### Sebelum perbaikan
-
-- **Yang teramati di trace (baseline):**
-- pengukuran awal S4 setelah P-02 (laptop masih memakai baterai): long task 6.731 ms, INP 6.848 ms, 0 frame tergambar selama progres tampil (bar progres tidak pernah terlihat bergerak). Ketikan "tas" di kolom cari selama perhitungan hilang: nilai kolom tetap kosong, karena ketukan ke kolom cari baru diproses setelah huruf-hurufnya. Di kode awal dengan 300 produk (uji harness): long task 11,7 detik, INP 13 detik, 0 frame progres.
-- **Dugaan mekanisme:**
-- `hitungHargaPromo` ditandai `async`, tetapi isinya kerja CPU sinkron. `await` pada promise yang sudah selesai tidak menyerahkan giliran ke event loop. Lanjutannya hanya masuk **antrean microtask**, dan microtask checkpoint menguras antrean itu sampai habis, termasuk microtask baru yang terus ditambahkan setiap iterasi, sebelum event loop boleh mengambil task berikutnya atau menjalankan langkah rendering. Jadi 3000 iterasi berjalan di dalam satu task. Penulisan `isi.style.width` di setiap iterasi hanya mengubah DOM dan tidak pernah digambar sampai loop selesai. Input (ketukan, huruf) menunggu di antrean. Setelah loop, `perbaruiHargaVoucherDiKartu` membangun ulang kartu di task yang sama. Catatan Rudi #4 ("sudah async, jadi aman") keliru.
-- **Rencana perubahan:**
-- `hitungHargaPromo` menjadi fungsi sinkron biasa. Loop diiris per ±8 ms: setelah setiap irisan, progres diperbarui, lalu fungsi menyerahkan giliran dengan task baru. Dipakai `scheduler.yield()` bila tersedia;
-  bila tidak, `MessageChannel`, yang tidak terkena jeda minimum 4 ms seperti `setTimeout` bersarang. Di antara irisan, event loop bisa menjalankan input dan rendering.
-- Hasil ditampung di `Map` baru lalu ditukar sekaligus di akhir, jadi kartu yang dirender selama perhitungan (misal karena pengguna mengetik) tidak menampilkan harga setengah jadi. Penerapan voucher baru membatalkan
-  perhitungan yang sedang berjalan (penghitung generasi).
-- Kartu yang sudah tampil diperbarui di tempat (menyisipkan baris harga voucher), bukan dibangun ulang.
-- Tombol voucher diberi `aria-busy` selama perhitungan.
-- Perhitungan 40 kali `simulasiCicilan` yang hasilnya dibuang belum diubah di sini (lihat P-12), supaya efek penjadwalan dan efek pengurangan kerja bisa diukur terpisah.
-- **Prediksi terukur:**
-- S4: long task terlama selama perhitungan turun dari ±6,7 detik menjadi ≤ 60 ms (irisan 8 ms + kerja frame + render pencarian). Frame yang tergambar selama progres naik dari 0 menjadi ratusan, dengan progres berubah bertahap (≥ 20 langkah berbeda).
-- INP S4 (ketukan voucher, ketukan kolom cari, 3 huruf) < 200 ms, dan huruf "tas" benar-benar masuk ke kolom.
-- Efek samping: waktu total sampai voucher selesai naik, bukan turun (±7 -> ±9-11 detik), karena setiap irisan menunggu gilirannya dan frame ikut digambar. Pengguna menunggu sedikit lebih lama, tetapi halaman
-  tetap hidup dan progresnya terlihat. Waktu total dipangkas di P-12.
-- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
-- Web Worker: perhitungan benar-benar paralel dan main thread bebas, tetapi 3000 produk harus dikirim (structured clone), aturan voucher diduplikasi di berkas worker, dan setelah P-12 perhitungannya hanya ±0,4 detik. Tidak
-  sebanding dengan kerumitannya.
-- `setTimeout(0)` per 50 produk (irisan jumlah tetap): setelah 5 tingkat bersarang ada jeda minimum 4 ms per irisan, dan irisan berjumlah tetap bisa terlalu panjang di perangkat lambat. Irisan berbasis waktu menyesuaikan diri.
-- `requestIdleCallback`: bisa tertunda lama bila halaman tidak pernah senggang (misal sedang digulir). Padahal pengguna sedang menunggu hasilnya, jadi ini bukan kerja latar.
-
-### Sesudah perbaikan
-
-- **Hash commit perbaikan:**
-- **Hasil ukur (median 3 kali):**
-- **Prediksi vs kenyataan:**
-- **Efek samping yang muncul:**
-
-## P-12:
-
-**Tiket terkait:**
-**Tanggal dan hash commit entri ini:**
-
-### Sebelum perbaikan
-
-- **Yang teramati di trace (baseline):**
-- **Dugaan mekanisme:**
-- **Rencana perubahan:**
-- **Prediksi terukur:**
-- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
-
-### Sesudah perbaikan
-
-- **Hash commit perbaikan:**
-- **Hasil ukur (median 3 kali):**
-- **Prediksi vs kenyataan:**
-- **Efek samping yang muncul:**
-
 ## P-09: "+ Keranjang" baru memberi umpan balik setelah riwayat 1,2 MB dibaca dan ditulis ulang
 
 **Tiket terkait:** TK-1044 (utama), TK-1052
-**Tanggal dan hash commit entri ini:** 25-09-2026, hash dicatat di bagian "Sesudah"
+**Tanggal dan hash commit entri ini:** 16-10-2026
 
 ### Sebelum perbaikan
 
@@ -398,7 +431,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** 9448769
+- **Hash commit perbaikan:** 644ca23
 - **Hasil ukur (median 3 kali):** dibanding P-08 pengukuran pagi (`data/P-08-pagi`). S2: ketukan → tombol berubah 147 → **99 ms** (ulangan 97-99; P-08:
   141-187), INP 168 → 192 ms (ulangan 184-208; P-08: 168-248), long task 141 → 134 ms.
 - **Prediksi vs kenyataan:** Arah **sesuai**: umpan balik kini konsisten ±100 ms. Besarnya **meleset**. Diprediksi
@@ -409,6 +442,225 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Efek samping yang muncul:** Task senggang untuk menyimpan riwayat tidak terlihat sebagai long task di S2 (long
   task terlama 134 ms, sama dengan sebelumnya). Uji fungsional "riwayat aktivitas: entri tersimpan, tidak ada data
   lama hilang" lulus.
+
+---
+
+## P-10: "Beli sekarang" tanpa penjaga permintaan ganda dan tanpa umpan balik
+
+**Tiket terkait:** TK-1052 (utama)
+**Tanggal dan hash commit entri ini:** 16-10-2026
+
+### Sebelum perbaikan
+
+- **Yang teramati:** uji fungsional di kode awal: tiga klik cepat pada satu produk menghasilkan **3 pesanan** di
+  server, dan selama diproses teks tombol tetap "Beli sekarang". Pengukuran awal S3 setelah P-02 (laptop masih
+  memakai baterai): **3 pesanan** dari 3 ketukan, INP 1.624 ms, dan perubahan tampilan pertama baru muncul
+  **2.000 ms** setelah ketukan pertama ("Dipesan ✓", setelah respons server). Log server mencatat 3 baris
+  `[pesanan]`.
+- **Dugaan mekanisme:** setiap klik memulai `beliSekarang()` baru. Tidak ada penanda "sedang diproses", jadi tiga
+  klik menghasilkan tiga `fetch('POST /api/pesanan')` yang berjalan bersamaan, dan server (tanpa kunci
+  idempotensi) membuat tiga pesanan. Umpan balik pertama baru ditulis setelah `await fetch()` dan
+  `await respons.json()` selesai: minimal 350 ms latensi server ditambah antrean task (di kode awal juga
+  parse/stringify riwayat dan SDK 1,2 MB sebelum `fetch` dikirim). Selama itu tombol tampak "diam saja" dan
+  pengguna menekan lagi. Ini masalah *user error protection*: antarmuka tidak mencegah kesalahan yang dipicunya
+  sendiri. Kode server tidak boleh diubah, jadi penjaga harus ada di klien.
+- **Rencana perubahan:**
+  - Penjaga per produk (`Set` id yang sedang diproses). Ketukan ulang selama pesanan diproses diabaikan.
+  - Umpan balik di task klik yang sama: teks "Memproses…", `aria-busy="true"`, `aria-disabled="true"`, dan gaya
+    visual sibuk. Atribut `disabled` sengaja tidak dipakai supaya fokus keyboard dan pembaca layar tidak hilang.
+  - Setelah berhasil: "Dipesan ✓" selama 1,5 detik (masih dijaga, supaya ketukan yang tertinggal tidak menjadi
+    pesanan kedua), toast berisi nomor pesanan, dan lencana diperbarui.
+  - Bila gagal (jaringan/HTTP): toast pesan kesalahan dan tombol kembali siap. Di kode awal, kegagalan membuat
+    promise ditolak tanpa penanganan dan tombol tidak memberi tahu apa pun.
+- **Prediksi terukur:**
+  - S3: jumlah pesanan dari 3 ketukan cepat **tepat 1**. Lencana "Pesanan" menjadi 1.
+  - Perubahan tampilan pertama ("Memproses…") **< 50 ms** setelah ketukan. INP S3 **< 200 ms**.
+  - Efek samping: pengguna yang memang ingin memesan produk yang sama dua kali harus menunggu ±1,5 detik setelah
+    pesanan pertama selesai. Penjaga hanya melindungi satu tab; dua tab yang sama tetap bisa menggandakan pesanan.
+    Solusi tuntasnya kunci idempotensi di server (rekomendasi untuk tim backend).
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  - `button.disabled = true`: sederhana, tetapi fokus keyboard hilang dan pembaca layar tidak mengumumkan apa-apa.
+  - Debounce klik berbasis waktu (misal 500 ms): gagal bila server lebih lambat dari jendela debounce, dan tetap
+    tanpa umpan balik.
+  - Kunci idempotensi di body permintaan: benar secara arsitektur, tetapi server tidak membacanya (di luar
+    ruang lingkup).
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** c3aa8df
+- **Hasil ukur (median 3 kali):** dibanding P-09. S3: pesanan dari 3 ketukan cepat 3 → **1** (ketiga ulangan).
+  Perubahan tampilan pertama 498 ms ("Dipesan ✓", setelah respons server) → **84 ms** ("Memproses…", ulangan
+  80-104). INP S3 64 → 80 ms (ulangan 72-328).
+- **Prediksi vs kenyataan:** Tepat 1 pesanan: **sesuai**. INP < 200 ms: **sesuai** (median). Umpan balik < 50 ms:
+  **meleset** (84 ms), karena teks berubah di task klik tetapi baru terlihat di frame berikutnya, yang pada CPU 4x
+  ikut menunggu input delay dan presentasi.
+- **Efek samping yang muncul:** Satu ulangan INP 328 ms (variasi; ulangan lain 72-80 ms). Uji fungsional "pembelian
+  berikutnya setelah selesai tetap bisa" lulus. Batasan satu tab tetap berlaku (rekomendasi idempotensi ke backend).
+
+---
+
+## P-11: Perhitungan Voucher "async" tetap satu task panjang tanpa kesempatan menggambar
+
+**Tiket terkait:** TK-1057 (utama), TK-1041 (mengetik saat voucher dihitung)
+**Tanggal dan hash commit entri ini: 02-10-2026**
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):**
+- pengukuran awal S4 setelah P-02 (laptop masih memakai baterai): long task 6.731 ms, INP 6.848 ms, 0 frame tergambar selama progres tampil (bar progres tidak pernah terlihat bergerak). Ketikan "tas" di kolom cari selama perhitungan hilang: nilai kolom tetap kosong, karena ketukan ke kolom cari baru diproses setelah huruf-hurufnya. Di kode awal dengan 300 produk (uji harness): long task 11,7 detik, INP 13 detik, 0 frame progres.
+- **Dugaan mekanisme:**
+- `hitungHargaPromo` ditandai `async`, tetapi isinya kerja CPU sinkron. `await` pada promise yang sudah selesai tidak menyerahkan giliran ke event loop. Lanjutannya hanya masuk **antrean microtask**, dan microtask checkpoint menguras antrean itu sampai habis, termasuk microtask baru yang terus ditambahkan setiap iterasi, sebelum event loop boleh mengambil task berikutnya atau menjalankan langkah rendering. Jadi 3000 iterasi berjalan di dalam satu task. Penulisan `isi.style.width` di setiap iterasi hanya mengubah DOM dan tidak pernah digambar sampai loop selesai. Input (ketukan, huruf) menunggu di antrean. Setelah loop, `perbaruiHargaVoucherDiKartu` membangun ulang kartu di task yang sama. Catatan Rudi #4 ("sudah async, jadi aman") keliru.
+- **Rencana perubahan:**
+- `hitungHargaPromo` menjadi fungsi sinkron biasa. Loop diiris per ±8 ms: setelah setiap irisan, progres diperbarui, lalu fungsi menyerahkan giliran dengan task baru. Dipakai `scheduler.yield()` bila tersedia;
+  bila tidak, `MessageChannel`, yang tidak terkena jeda minimum 4 ms seperti `setTimeout` bersarang. Di antara irisan, event loop bisa menjalankan input dan rendering.
+- Hasil ditampung di `Map` baru lalu ditukar sekaligus di akhir, jadi kartu yang dirender selama perhitungan (misal karena pengguna mengetik) tidak menampilkan harga setengah jadi. Penerapan voucher baru membatalkan
+  perhitungan yang sedang berjalan (penghitung generasi).
+- Kartu yang sudah tampil diperbarui di tempat (menyisipkan baris harga voucher), bukan dibangun ulang.
+- Tombol voucher diberi `aria-busy` selama perhitungan.
+- Perhitungan 40 kali `simulasiCicilan` yang hasilnya dibuang belum diubah di sini (lihat P-12), supaya efek penjadwalan dan efek pengurangan kerja bisa diukur terpisah.
+- **Prediksi terukur:**
+- S4: long task terlama selama perhitungan turun dari ±6,7 detik menjadi ≤ 60 ms (irisan 8 ms + kerja frame + render pencarian). Frame yang tergambar selama progres naik dari 0 menjadi ratusan, dengan progres berubah bertahap (≥ 20 langkah berbeda).
+- INP S4 (ketukan voucher, ketukan kolom cari, 3 huruf) < 200 ms, dan huruf "tas" benar-benar masuk ke kolom.
+- Efek samping: waktu total sampai voucher selesai naik, bukan turun (±7 -> ±9-11 detik), karena setiap irisan menunggu gilirannya dan frame ikut digambar. Pengguna menunggu sedikit lebih lama, tetapi halaman
+  tetap hidup dan progresnya terlihat. Waktu total dipangkas di P-12.
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+- Web Worker: perhitungan benar-benar paralel dan main thread bebas, tetapi 3000 produk harus dikirim (structured clone), aturan voucher diduplikasi di berkas worker, dan setelah P-12 perhitungannya hanya ±0,4 detik. Tidak
+  sebanding dengan kerumitannya.
+- `setTimeout(0)` per 50 produk (irisan jumlah tetap): setelah 5 tingkat bersarang ada jeda minimum 4 ms per irisan, dan irisan berjumlah tetap bisa terlalu panjang di perangkat lambat. Irisan berbasis waktu menyesuaikan diri.
+- `requestIdleCallback`: bisa tertunda lama bila halaman tidak pernah senggang (misal sedang digulir). Padahal pengguna sedang menunggu hasilnya, jadi ini bukan kerja latar.
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:**
+  `4368bf1` (entri prediksi ini di-commit lebih dulu: `3bf3424`)
+- **Hasil ukur (median 3 kali):**
+- dibanding P-10. S4: INP 4.272 → **232 ms** (ulangan 208-240). Long task 3.970 →
+  133 ms. Langkah progres tergambar 0 → **44** (37-53), frame selama progres 0 → 48. Ketikan "tas" tetap masuk.
+  Ketuk voucher sampai selesai 4,4 → 6,6 detik (5,4-7,7).
+- **Prediksi vs kenyataan:**
+  Progres bertahap ≥ 20 langkah **sesuai** (44). Waktu total naik **sesuai arah**
+  (prediksi ±7 → ±9-11 detik, dengan angka awal yang diukur saat baterai; di matriks akhir 4,4 → 6,6 detik). Long
+  task ≤ 60 ms **meleset** (133 ms): irisannya memang ±8 ms, tetapi task frame dan render pencarian 12 kartu di
+  tengah perhitungan lebih dari itu. Frame "ratusan" **meleset** (48 frame dalam 6,6 detik, ±7 per detik). Lanjutan
+  `scheduler.yield()` didahulukan di atas task lain, jadi frame hanya tergambar saat penjadwal memberi giliran
+  rendering. INP < 200 ms **nyaris** (232).
+- **Efek samping yang muncul:**
+  Tidak ada kesalahan harga (uji fungsional harga voucher di kartu dan setelah
+  pencarian lulus). Menerapkan voucher lagi di tengah perhitungan membatalkan perhitungan lama (nomor generasi). Ini
+  dijamin oleh rancangan, belum oleh uji otomatis: `uji-voucher-sela.mjs` tidak bisa menyela lewat DevTools karena
+  lanjutan `scheduler.yield()` didahulukan (AUDIT-AI A-02).
+
+## P-12: 40 kali simulasi cicilan per produk yang hasilnya dibuang
+
+**Tiket terkait:** TK-1057
+**Tanggal dan hash commit entri ini:** 16-10-2026
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):**
+  micro-benchmark CPU 4x (`uji-dugaan.mjs`): perhitungan voucher untuk 3000 produk dengan
+  41 panggilan `simulasiCicilan` per produk (baris `for (let i = 0; i < 40; i++) simulasiCicilan(hargaAkhir + i)`
+  plus 1 yang dipakai) = **7.666 ms**. Dengan 1 panggilan per produk = **370 ms**. Di trace S4 kode awal,
+  `simulasiCicilan` mendominasi bottom-up task voucher.
+- **Dugaan mekanisme:**
+  `simulasiCicilan` adalah fungsi murni: hanya variabel lokal dan `Math`, tanpa efek samping.
+  Keempat puluh hasil pada loop "cek kestabilan pembulatan" tidak disimpan, tidak dibandingkan, dan tidak
+  memengaruhi `hargaAkhir` maupun `cicilan` yang dikembalikan. Jadi 40/41 kerja CPU (±97%) tidak menghasilkan
+  apa pun. Setelah P-11 halaman tetap responsif, tetapi pengguna menunggu seluruh kerja sia-sia itu selesai.
+- **Rencana perubahan:**
+  hapus loop 40 kali. `simulasiCicilan(hargaAkhir)` yang benar-benar dipakai tetap
+  dijalankan untuk setiap produk, jadi aturan bisnis cicilan 0% tetap ada dan hasilnya sama.
+- **Prediksi terukur:**
+- S4: waktu dari ketukan voucher sampai selesai turun dari ±9-11 detik (setelah P-11) menjadi **< 1,5 detik**.
+  Progres tetap tergambar bertahap, tetapi dalam lebih sedikit langkah (±370 ms kerja / 8 ms per irisan ≈ 45
+  irisan).
+- Harga voucher dan simulasi cicilan tidak berubah (uji fungsional: jumlah produk bervoucher dan harga di
+  kartu sama).
+- Efek samping: bila tim bisnis memang membutuhkan pemeriksaan kestabilan pembulatan, tempatnya di uji otomatis
+  saat pengembangan, bukan dijalankan 120.000 kali di HP pembeli setiap kali voucher dipakai. Ini perlu
+  dikonfirmasi ke tim bisnis.
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:|**
+  memindahkan loop ke Web Worker (kerja sia-sia
+  tetap memakan CPU/baterai, hanya di thread lain) atau memoisasi `simulasiCicilan` per harga (hasil 40 panggilan
+  itu tetap tidak dipakai).
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:**
+  `a0b788b` (entri prediksi ini di-commit lebih dulu: `c736740`)
+- **Hasil ukur (median 3 kali):**
+  dibanding P-11. S4: ketuk voucher sampai selesai 6.560 → **1.202 ms** (ulangan
+  1.201-1.209). Langkah progres tergambar 44 → 4 (2-5). INP S4 232 → 288 ms (136-328), long task 133 → 163 ms.
+  Micro-benchmark `hitungHargaPromo` 3000 produk: 5.050 → 183 ms.
+- **Prediksi vs kenyataan:**
+  Waktu total < 1,5 detik: **sesuai**. Progres tetap tergambar bertahap: **sesuai**,
+  tetapi hanya 2-5 langkah, lebih sedikit daripada perkiraan ±45 irisan. Irisannya banyak, tetapi frame yang
+  tergambar sedikit (lihat P-11). INP naik dalam rentang yang tumpang tindih (variasi).
+- **Efek samping yang muncul:**
+  Harga voucher dan jumlah produk bervoucher tidak berubah (uji fungsional lulus).
+  Keputusan menghapus "cek kestabilan pembulatan" tetap perlu dikonfirmasi ke tim bisnis.
+
+## P-13: Konten disisipkan belakangan tanpa ruang yang dipesan (layout shift)
+
+**Tiket terkait:** TK-1078 (utama)
+**Tanggal dan hash commit entri ini:** 16-10-2026
+
+### Sebelum perbaikan
+
+- **Yang teramati:** atribut layout-shift (PerformanceObserver, `sources`) pada commit P-01, CPU 4x: pergeseran
+  **0,4737** saat kartu pertama tampil. Sumbernya: `footer.kaki` terdorong dari y=562 ke luar layar, serta
+  `div.alat-kanan` dan `#ringkasan` turun 115 px karena keping kategori baru dibuat. Lalu pergeseran **0,1368**
+  saat banner promo tiba (detik ke-80): `#alat` 362→580, kisi 627→844. Pengukuran awal commit P-02: CLS 0,14-0,61
+  pada S0. Di kode awal pada CPU 4x pergeseran ini sebagian tersembunyi, karena main thread yang terblokir
+  membuat banner kebetulan disisipkan sebelum frame pertama. Makin cepat halaman, makin terlihat masalahnya.
+  Tinggi banner sebenarnya: 248 px (≤ 360 px), 202 px (390-560 px), 177 px (768 px), 132 px (≥ 1024 px).
+- **Dugaan mekanisme:** tiga elemen baru mendapat tinggi setelah frame pertama digambar:
+  1. banner promo di-`prepend` ke `#utama` setelah `/api/promo` (±1,8 detik) tanpa ruang dipesan, sehingga semua
+     yang di bawahnya turun ±218 px;
+  2. keping kategori baru dibuat setelah data produk tiba dan membungkus 3 baris di 412 px, sehingga toolbar
+     bertambah ±127 px;
+  3. kisi kosong sampai render selesai, sehingga kaki halaman sempat tergambar di tengah layar lalu terdorong.
+  Pergeseran yang tidak didahului input dalam 500 ms dihitung ke CLS. Karena kartu produk bergeser tepat saat
+  pengguna hendak mengetuk, ketukan jatuh ke banner (TK-1078: "yang kepencet malah iklan promo").
+  Pergeseran dari gambar tanpa ukuran dan animasi `margin-top` sudah ditangani P-01 dan P-07.
+- **Rencana perubahan:**
+  - Banner: elemen `#promo-banner` sudah ada di HTML sejak awal dengan `min-height` per breakpoint sesuai tinggi
+    sebenarnya (248/202/177/132 px). `promo.js` mengisi elemen itu, tidak lagi menyisipkan elemen baru.
+  - Keping kategori: satu baris yang bisa digeser horizontal (`flex-wrap: nowrap; overflow-x: auto`) dengan
+    `min-height` satu baris yang sudah dipesan sebelum keping dibuat.
+  - Kisi: `.kisi:empty { min-height: 100vh }` selama memuat, supaya kaki halaman tidak tergambar di tengah layar.
+  - Angka hitung mundur memakai `font-variant-numeric: tabular-nums` (sudah di P-07) supaya lebarnya tidak
+    berubah-ubah.
+- **Prediksi terukur:**
+  - S0: CLS (sejak dokumen dibuat, pelapor harness) turun dari 0,14-0,61 menjadi **≤ 0,02**. Sisa pergeseran
+    hanya bila teks banner dari API membungkus lebih banyak baris daripada tinggi yang dipesan.
+  - Efek samping: kotak banner gelap kosong terlihat ±1,8 detik sebelum isinya tiba (placeholder). Keping kategori
+    di layar sempit kini harus digeser ke samping untuk melihat semuanya (kurang terlihat dibanding 3 baris,
+    tetapi kartu produk naik ±127 px dan lebih cepat terlihat). `min-height` banner harus diperbarui bila teks
+    promo berubah jauh lebih panjang.
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  - Menaruh banner di bawah kisi atau sebagai lapisan melayang: tidak menggeser kartu, tetapi mengubah desain
+    dan hierarki promo secara besar, dan lapisan melayang bisa menutupi konten.
+  - Memuat promo sebelum render pertama (menunggu `/api/promo` 1,8 detik): tidak ada pergeseran, tetapi seluruh
+    halaman terlambat 1,8 detik.
+  - Membuat keping kategori dari daftar kategori statis di HTML: tidak perlu menunggu data, tetapi kategori
+    menjadi ganda sumber (HTML dan data) dan bisa tidak sinkron.
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** 7c54eda
+- **Hasil ukur (median 3 kali):** dibanding P-12. CLS S0 0,137 → **0** (ketiga ulangan; sejak P-13 semua ulangan
+  semua versi berikutnya 0). Long task saat memuat 417 → 747 ms (657-949). Tidak direncanakan: INP S1 360 → 488 ms
+  (448-552; P-12: 224-424) dan S6 sibuk 57% → 70%.
+- **Prediksi vs kenyataan:** CLS ≤ 0,02: **sesuai** (0). Kenaikan long task memuat, INP S1, dan sibuk S6 **tidak
+  kami prediksi**. Rentang S1 tidak tumpang tindih, jadi kemungkinan nyata. Trace per ulangan versi antara tidak
+  disimpan, sehingga penyebabnya belum dipastikan. Dugaan kami: baris keping kategori yang kini menjadi wadah gulir
+  horizontal dan banner yang ada sejak awal menambah kerja Style/Layout di setiap frame. Kenaikan ini tertutup oleh
+  P-15 dan P-16 (INP S1 akhir 152 ms).
+- **Efek samping yang muncul:** Kotak banner kosong ±1,8 detik dan keping kategori yang harus digeser sesuai
+  prediksi. Biaya kerja per frame naik (lihat di atas).
+
+---
 
 ## P-14: Setiap huruf membangun kartu baru dan memuat gambar SVG-nya
 

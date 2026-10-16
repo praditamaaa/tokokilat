@@ -9,14 +9,16 @@ export function el(tag, kelas, teks) {
   return node;
 }
 
+
 // Pemformat dibuat sekali saja. Membuat Intl.NumberFormat (atau memanggil toLocaleString('id-ID'))
 // berarti negosiasi locale dan membangun pemformat ICU dari awal; di setiap kartu itu ±1 ms (CPU 4x).
-  const PEMFORMAT_RUPIAH = new Intl.NumberFormat('id-ID', {
+const PEMFORMAT_RUPIAH = new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     maximumFractionDigits: 0,
-  });
-  const PEMFORMAT_ANGKA = new Intl.NumberFormat('id-ID');
+});
+
+const PEMFORMAT_ANGKA = new Intl.NumberFormat('id-ID');
 
 export function formatRupiah(angka) {
   return PEMFORMAT_RUPIAH.format(angka);

@@ -1,6 +1,5 @@
 // Elemen kampanye: hitung mundur, teks berjalan, dan banner promo.
 
-import { $, el, tampilkanToast } from './util.js';
 import * as analitik from './analitik.js';
 
 // Flash sale berakhir tengah malam nanti (waktu perangkat).

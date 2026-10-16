@@ -2,10 +2,15 @@
 
 import { $, el, hargaSetelahDiskon } from './util.js';
 import { keadaan, renderProduk } from './katalog.js';
+<<<<<<< HEAD
+
+const saringan = { kata: '', kategori: 'Semua', urut: 'relevan' };
+=======
 import * as analitik from './analitik.js';
 
 const saringan = { kata: '', kategori: 'Semua', urut: 'relevan' };
 let pewaktuCatatCari = null;
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 
 // "Sepatu Lari" == "sepatu  lari" == "SEPATU-LARI"
 function normalkan(teks) {
@@ -17,6 +22,11 @@ function normalkan(teks) {
     .trim();
 }
 
+<<<<<<< HEAD
+function cocok(produk, kunci) {
+  const teks = normalkan(produk.nama + ' ' + produk.merek + ' ' + produk.kategori + ' ' + produk.kota);
+  return kunci.split(' ').every((k) => teks.includes(k));
+=======
 // Teks pencarian tiap produk tidak pernah berubah, jadi dinormalkan sekali saja lalu disimpan.
 // Sebelumnya normalize('NFD') + dua regex dijalankan untuk 3000 produk di setiap huruf yang diketik.
 const teksCari = new Map(); // id produk -> teks yang sudah dinormalkan
@@ -33,6 +43,7 @@ function teksProduk(produk) {
 function cocok(produk, kata) {
   const teks = teksProduk(produk);
   return kata.every((k) => teks.includes(k));
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 }
 
 const PEMBANDING = {
@@ -42,6 +53,19 @@ const PEMBANDING = {
   rating: (a, b) => b.rating - a.rating || b.terjual - a.terjual,
 };
 
+<<<<<<< HEAD
+export function terapkanSaringan() {
+  const kunci = normalkan(saringan.kata);
+  let hasil = keadaan.semuaProduk.filter((p) => {
+    if (saringan.kategori !== 'Semua' && p.kategori !== saringan.kategori) return false;
+    if (kunci && !cocok(p, kunci)) return false;
+    return true;
+  });
+  if (PEMBANDING[saringan.urut]) hasil = hasil.slice().sort(PEMBANDING[saringan.urut]);
+  renderProduk(hasil);
+
+  if (window.Lacak && kunci) window.Lacak.kirim('search', { kata: saringan.kata, jumlah: hasil.length });
+=======
 // tundaGambar: dipakai saat mengetik, supaya gambar hasil sementara tidak dimuat di setiap huruf.
 export function terapkanSaringan({ tundaGambar = false } = {}) {
   const kunci = normalkan(saringan.kata);
@@ -62,13 +86,18 @@ export function terapkanSaringan({ tundaGambar = false } = {}) {
     const jumlah = hasil.length;
     pewaktuCatatCari = setTimeout(() => analitik.kirim('search', { kata, jumlah }), 1000);
   }
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 }
 
 export function pasangPencarian() {
   const kolom = $('#kolom-cari');
   kolom.addEventListener('input', () => {
     saringan.kata = kolom.value;
+<<<<<<< HEAD
+    terapkanSaringan();
+=======
     terapkanSaringan({ tundaGambar: true });
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
   });
 
   $('#pilih-urut').addEventListener('change', (e) => {

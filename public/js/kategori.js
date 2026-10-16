@@ -1,6 +1,10 @@
 // Bagian kaki halaman: merek paling laris & kategori yang sering dibeli bersamaan.
 
+<<<<<<< HEAD
+import { $, el, urutkanGelembung } from './util.js';
+=======
 import { $, el, formatAngka, urutkanGelembung } from './util.js';
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 
 export function pasangKaki(semuaProduk) {
   // --- merek paling laris ---
@@ -9,7 +13,11 @@ export function pasangKaki(semuaProduk) {
   const merek = Object.keys(terjualPerMerek).map((nama) => ({ nama, terjual: terjualPerMerek[nama] }));
   const teratas = urutkanGelembung(merek, (a, b) => b.terjual - a.terjual).slice(0, 5);
   const daftarMerek = $('#merek-populer');
+<<<<<<< HEAD
+  for (const m of teratas) daftarMerek.append(el('li', '', m.nama + ' (' + m.terjual.toLocaleString('id-ID') + ' terjual)'));
+=======
   for (const m of teratas) daftarMerek.append(el('li', '', m.nama + ' (' + formatAngka(m.terjual) + ' terjual)'));
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 
   // --- kategori terkait ---
   // TODO(rudi): ini O(n^2) dan ada querySelectorAll di dalam loop. HARUS dioptimasi sebelum 12.12!!!
