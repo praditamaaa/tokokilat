@@ -108,7 +108,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
+- **Hash commit perbaikan:** 16b93c7dbb9acdd83821cb4b80b39039fd22e8a4
 - **Hasil ukur (median 3 kali):** dibanding P-02. Long task saat memuat 1.535 -> 1.161 ms
   (ulangan 945-1.358).INP S1 1.464 -> 2.056 ms (ulangan 1.168-2.544; P-02:
   688-2.168). Long task S1 644 -> 870 ms. Micro-benchmark `formatRupiah` 3000x
@@ -147,7 +147,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
+- **Hash commit perbaikan:** 5e474c18c57aca2cb0c69e23697a9f4c517cb26b
 - **Hasil ukur (median 3 kali):** dibanding P-03. INP S1 2.056 -> 552 ms (ulangan 528-960).
   Long task S1 870 -> 321 ms. Layout paksa selama S1 497 -> 177. Long task
   saat memuat 1.161 -> 802 ms.
@@ -188,11 +188,11 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** 8093ee1
+- **Hash commit perbaikan:** 552b62d7e503c0c578a3c0b0f59678cab4cb6c41
 - **Hasil ukur (median 3 kali):** Long task S1 321 → 242 ms. Micro-benchmark penyaringan "sepatu" (CPU 4x): 28,4 → 1,9 ms.
 - **Prediksi vs kenyataan:** Prediksi dampak kecil (±25 ms per ketikan) **sesuai arah**. Median INP turun 120 ms, sebagian besar penurunan itu variasi. Sesuai dugaan, ini bukan
   penyebab utama.
-- **Efek samping yang muncul:** Tidak terlihat. Uji fungsional pencarian (jumlah hasil benar, kartu yang tampil
+- **Efek samping yang muncul:** Tidak te552b62d7e503c0c578a3c0b0f59678cab4cb6c41rlihat. Uji fungsional pencarian (jumlah hasil benar, kartu yang tampil
   memang cocok, pesan kosong) lulus. Memori tambahan ±3000 string tidak diukur.
 
 ---
@@ -437,7 +437,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ....
+- **Hash commit perbaikan:** 552b62d7e503c0c578a3c0b0f59678cab4cb6c41
 - **Hasil ukur (median 3 kali):** dibanding
   P-13. INP S1 488 ->496 ms (352-632), long task S1 244 ->267 ms. S4 INP 272
   ->168 ms, long task S4 152 ->83 ms. S5 frame > 50 ms 79,6 ->62,7
@@ -552,9 +552,9 @@ men-debounce render pencarian (hasil tidak mengikuti ketikan), dan virtualisasi 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** 28ed706
+- **Hash commit perbaikan:**  40b94353f19bf7db5828bf7010726c725fca5cf5
 - **Hasil ukur (median 3 kali):** dibanding P-14. S5: frame > 50 ms 62,7 → 69 per 10 detik (62-84), sibuk 87,4% →
-  87,4%, long task 118 → 85 ms, frame terburuk 162 → 133 ms. S6 sibuk 52,9% → **37,7%**. INP S1 496 → 360 ms
+- 87,4%, long task 118 → 85 ms, frame terburuk 162 → 133 ms. S6 sibuk 52,9% → **37,7%**. INP S1 496 → 360 ms
   (232-432).
 - **Prediksi vs kenyataan:** Frame lambat S5 turun 30-40%: **meleset**, tidak berubah. Frame gulir tetap berisi
   kerja untuk kartu yang baru mendekati layar (sekarang ditata saat itu), dan dokumen SVG gambar. Recalculate Style
@@ -563,6 +563,10 @@ men-debounce render pencarian (hasil tidak mengikuti ketikan), dan virtualisasi 
 - **Efek samping yang muncul:** CLS tetap 0 (tinggi perkiraan 440 px tidak menimbulkan pergeseran yang terlihat).
   Harga yang baru terlihat di trace akhir: hit test saat ketukan S2 bisa memaksa Layout kartu yang dilewati
   `content-visibility` (131 ms pada trace S2 pengukuran pagi; 44 ms pada trace akhir `S2-sesudah.json.gz`).
+
+# 40b9435
+
+# 40b9435
 
 ## P-17: Gambar dimuat dan digambar di tengah guliran cepat
 
