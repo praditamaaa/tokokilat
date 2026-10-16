@@ -1,23 +1,16 @@
 // Katalog: menyimpan data produk dan menggambar kisi kartu produk.
 
-<<<<<<< HEAD
-import { $, el, formatRupiah, formatRibuan, hargaSetelahDiskon } from './util.js';
-import { tambahKeKeranjang, beliSekarang } from './keranjang.js';
-import { periksaGulir } from './gulir.js';
-=======
 import { $, el, formatAngka, formatRupiah, formatRibuan, hargaSetelahDiskon } from './util.js';
 import { tambahKeKeranjang, beliSekarang } from './keranjang.js';
 import { amatiKartu } from './gulir.js';
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
+import { daftarkanGambar, tahanGambar } from './gambar.js';
 
 export const keadaan = {
   semuaProduk: [],
   ditampilkan: [],
-<<<<<<< HEAD
-=======
   dirender: 0, // berapa kartu pertama dari `ditampilkan` yang sudah ada di DOM
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
   hargaVoucher: new Map(), // id produk -> harga setelah voucher
+  cicilanVoucher: new Map(), // id produk -> simulasi cicilan 0% ({ tenor, angsuran }) untuk harga voucher
 };
 
 export async function muatProduk() {
@@ -26,22 +19,19 @@ export async function muatProduk() {
   return keadaan.semuaProduk;
 }
 
-<<<<<<< HEAD
 function buatKartu(produk) {
-=======
-function buatKartu(produk, tundaGambar) {
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
   const kartu = el('article', 'kartu');
   kartu.dataset.id = produk.id;
 
-  if (produk.flashSale) kartu.append(el('span', 'lencana-kilat', '⚡ Kilat'));
+  if (produk.flashSale) {
+    // Kartu berlencana tidak diberi content-visibility (lihat toko.css): animasi di dalamnya memaksa frame main thread.
+    kartu.classList.add('kartu-kilat');
+    kartu.append(el('span', 'lencana-kilat', '⚡ Kilat'));
+  }
 
   const media = el('a', 'kartu-media');
   media.href = '#produk-' + produk.id;
   const gambar = document.createElement('img');
-<<<<<<< HEAD
-  gambar.src = produk.gambar;
-=======
   // Ukuran asli SVG dari CDN 480x480: dengan width/height browser sudah tahu rasio 1:1 sebelum
   // berkasnya tiba, jadi tinggi kartu tidak berubah (tidak ada layout ulang/geser) saat gambar datang.
   gambar.width = 480;
@@ -49,10 +39,10 @@ function buatKartu(produk, tundaGambar) {
   // Diisi sebelum src: gambar baru diunduh saat mendekati layar, bukan 3000 sekaligus.
   gambar.loading = 'lazy';
   gambar.decoding = 'async';
-  // Saat pengguna masih mengetik, alamat gambar ditahan dulu (lihat pasangGambarTertunda).
-  if (tundaGambar) gambar.dataset.src = produk.gambar;
-  else gambar.src = produk.gambar;
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
+  // Alamat gambar dipasang oleh pemuat (gambar.js): saat dekat layar dan halaman tidak sedang
+  // dikibas cepat atau diketik.
+  gambar.dataset.src = produk.gambar;
+  daftarkanGambar(gambar);
   gambar.alt = produk.nama;
   media.append(gambar);
 
@@ -69,11 +59,7 @@ function buatKartu(produk, tundaGambar) {
   if (hargaVoucher) harga.append(el('span', 'harga-voucher', 'Pakai voucher: ' + formatRupiah(hargaVoucher)));
   badan.append(harga);
 
-<<<<<<< HEAD
-  badan.append(el('div', 'keterangan', '★ ' + produk.rating.toLocaleString('id-ID') + ' | ' + formatRibuan(produk.terjual) + ' terjual'));
-=======
   badan.append(el('div', 'keterangan', '★ ' + formatAngka(produk.rating) + ' | ' + formatRibuan(produk.terjual) + ' terjual'));
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
   badan.append(el('div', 'keterangan', produk.kota));
 
   const aksi = el('div', 'aksi');
@@ -90,29 +76,6 @@ function buatKartu(produk, tundaGambar) {
   return kartu;
 }
 
-<<<<<<< HEAD
-// Judul produk panjangnya beda-beda (1-3 baris). Supaya harga & tombol dalam
-// satu deret sejajar rapi, tinggi judul disamakan mengikuti judul tertinggi.
-// Mengukur semua judul terlalu lambat, jadi cukup ukur sebagian sebagai contoh.
-const JUMLAH_CONTOH = 24;
-
-function samakanTinggiJudul() {
-  const judul = document.querySelectorAll('.kartu-judul');
-  let tertinggi = 0;
-  for (let i = 0; i < judul.length && i < JUMLAH_CONTOH; i++) {
-    const j = judul[i];
-    j.style.height = 'auto';
-    const tinggi = j.offsetHeight;
-    if (tinggi > tertinggi) tertinggi = tinggi;
-    j.style.height = tertinggi + 'px';
-  }
-  judul.forEach((j) => { j.style.height = tertinggi + 'px'; });
-}
-
-export function renderProduk(daftar) {
-  const kisi = $('#kisi');
-  keadaan.ditampilkan = daftar;
-=======
 // Judul produk panjangnya beda-beda (1-4 baris). Supaya harga & tombol dalam satu deret sejajar rapi,
 // setiap judul menempati tepat 3 baris lewat CSS (.kartu-judul: line-clamp + min-height), tanpa
 // mengukur judul dari JavaScript. Mengukur (offsetHeight) setelah menulis style.height memaksa layout
@@ -125,45 +88,74 @@ export function renderProduk(daftar) {
 const UKURAN_HALAMAN = 12;
 let pengamatUjung = null;
 
-// Setiap gambar produk (SVG) yang tiba membuat dokumen SVG sendiri di main thread (±20 ms pada CPU 4x).
-// Selama pengguna mengetik, hasil sementara berganti tiap huruf dan gambarnya tidak pernah sempat dilihat,
-// jadi alamat gambar baru dipasang setelah tidak ada render pencarian selama 350 ms.
+// Selama pengguna mengetik, hasil sementara berganti tiap huruf dan gambarnya tidak pernah sempat
+// dilihat, jadi pemasangan gambar ditahan sampai 350 ms setelah render pencarian terakhir.
 const JEDA_GAMBAR_MS = 350;
-let pewaktuGambar = null;
 
-function pasangGambarTertunda() {
-  pewaktuGambar = null;
-  for (const gambar of $('#kisi').querySelectorAll('img[data-src]')) {
-    gambar.src = gambar.dataset.src;
-    gambar.removeAttribute('data-src');
+// Elemen kartu disimpan per id produk. Render berikutnya (misalnya huruf berikutnya di kolom cari)
+// memakai elemen yang sama untuk produk yang sama: tidak ada createElement ulang, gambar yang sudah
+// dimuat tetap ada, dan kartu yang tetap di kisi tidak dilepas dari DOM sehingga hasil style/layout/
+// paint-nya bisa dipakai lagi oleh browser. Paling banyak 600 kartu; yang terlama dan tidak tampil dibuang.
+const MAKS_KARTU_TERSIMPAN = 600;
+const kartuTersimpan = new Map(); // id produk -> elemen kartu (urutan = terakhir dipakai)
+
+function kartuUntuk(produk) {
+  let kartu = kartuTersimpan.get(produk.id);
+  if (kartu) {
+    kartuTersimpan.delete(produk.id);
+    segarkanHargaVoucher(kartu);
+  } else {
+    kartu = buatKartu(produk);
+    amatiKartu(kartu);
   }
+  kartuTersimpan.set(produk.id, kartu);
+  if (kartuTersimpan.size > MAKS_KARTU_TERSIMPAN) {
+    for (const [id, lama] of kartuTersimpan) {
+      if (!lama.isConnected) {
+        kartuTersimpan.delete(id);
+        break;
+      }
+    }
+  }
+  return kartu;
 }
 
-function tambahKartu(jumlah, tundaGambar = false) {
+function tambahKartu(jumlah) {
   const daftar = keadaan.ditampilkan;
   const mulai = keadaan.dirender;
   const akhir = Math.min(mulai + jumlah, daftar.length);
   const potongan = document.createDocumentFragment();
-  for (let i = mulai; i < akhir; i++) {
-    const kartu = buatKartu(daftar[i], tundaGambar);
-    amatiKartu(kartu);
-    potongan.append(kartu);
-  }
+  for (let i = mulai; i < akhir; i++) potongan.append(kartuUntuk(daftar[i]));
   const pertama = potongan.firstElementChild;
   keadaan.dirender = akhir;
   $('#kisi').append(potongan);
 
-  samakanTinggiJudul();
   perbaruiUjung();
-  periksaGulir();
   return pertama;
 }
+
+// Susun isi kisi menjadi `diinginkan` dengan perubahan DOM sekecil mungkin: kartu yang tidak lagi
+// dipakai dilepas, kartu yang tetap dibiarkan di tempatnya, kartu baru disisipkan di posisinya.
+function susunKisi(kisi, diinginkan) {
+  const tetap = new Set(diinginkan);
+  for (const anak of [...kisi.children]) if (!tetap.has(anak)) anak.remove();
+  let acuan = kisi.firstElementChild;
+  for (const el of diinginkan) {
+    if (el === acuan) {
+      acuan = acuan.nextElementSibling;
+      continue;
+    }
+    kisi.insertBefore(el, acuan);
+  }
+}
+
+let pesanKosong = null;
 
 function perbaruiUjung() {
   const ujung = $('#ujung-kisi');
   const sisa = keadaan.ditampilkan.length - keadaan.dirender;
   ujung.hidden = sisa <= 0;
-   $('#muat-lagi').textContent = 'Tampilkan ' + Math.min(UKURAN_HALAMAN, sisa) + ' produk berikutnya (' + formatAngka(sisa) + ' lagi)';
+  $('#muat-lagi').textContent = 'Tampilkan ' + Math.min(UKURAN_HALAMAN, sisa) + ' produk berikutnya (' + formatAngka(sisa) + ' lagi)';
   // IntersectionObserver hanya melapor saat status berpotongan berubah. Penanda diamati ulang supaya,
   // bila masih dekat layar setelah kartu ditambah, halaman berikutnya ikut dibangun pada frame berikutnya.
   pengamatUjung.unobserve(ujung);
@@ -186,37 +178,37 @@ export function renderProduk(daftar, { tundaGambar = false } = {}) {
   siapkanUjung();
   const kisi = $('#kisi');
   keadaan.ditampilkan = daftar;
-  keadaan.dirender = 0;
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
-  kisi.innerHTML = '';
 
+  const diinginkan = [];
+  const jumlah = Math.min(UKURAN_HALAMAN, daftar.length);
+  if (tundaGambar) tahanGambar(JEDA_GAMBAR_MS);
+  for (let i = 0; i < jumlah; i++) diinginkan.push(kartuUntuk(daftar[i]));
   if (daftar.length === 0) {
-    const kosong = el('div', 'kosong');
-    kosong.append(el('strong', '', 'Produk tidak ditemukan.'), el('p', '', 'Periksa ejaan, atau coba kata kunci yang lebih umum seperti "sepatu" atau "serum".'));
-    kisi.append(kosong);
+    if (!pesanKosong) {
+      pesanKosong = el('div', 'kosong');
+      pesanKosong.append(el('strong', '', 'Produk tidak ditemukan.'), el('p', '', 'Periksa ejaan, atau coba kata kunci yang lebih umum seperti "sepatu" atau "serum".'));
+    }
+    diinginkan.push(pesanKosong);
   }
+  susunKisi(kisi, diinginkan);
+  keadaan.dirender = jumlah;
+  perbaruiUjung();
 
-<<<<<<< HEAD
-  for (const produk of daftar) {
-    kisi.append(buatKartu(produk));
-  }
-
-  samakanTinggiJudul();
-  $('#ringkasan').textContent = daftar.length.toLocaleString('id-ID') + ' produk ditampilkan';
-  periksaGulir();
-}
-
-export function perbaruiHargaVoucherDiKartu() {
-  renderProduk(keadaan.ditampilkan);
-=======
-  tambahKartu(UKURAN_HALAMAN, tundaGambar);
   $('#ringkasan').textContent = formatAngka(daftar.length) + ' produk ditampilkan';
-  clearTimeout(pewaktuGambar);
-  pewaktuGambar = tundaGambar ? setTimeout(pasangGambarTertunda, JEDA_GAMBAR_MS) : null;
 }
 
-// Harga voucher baru: bangun ulang sebanyak kartu yang sudah tampil, supaya posisi gulir pengguna tetap.
+// Harga voucher baru: kartu yang sudah tampil diperbarui di tempat (baris harga voucher disisipkan),
+// bukan dibangun ulang; posisi gulir dan fokus pengguna tetap.
+function segarkanHargaVoucher(kartu) {
+  const harga = kartu.querySelector('.harga');
+  const lama = harga.querySelector('.harga-voucher');
+  const hargaVoucher = keadaan.hargaVoucher.get(Number(kartu.dataset.id));
+  const teks = hargaVoucher ? 'Pakai voucher: ' + formatRupiah(hargaVoucher) : null;
+  if (lama && lama.textContent === teks) return;
+  if (lama) lama.remove();
+  if (teks) harga.append(el('span', 'harga-voucher', teks));
+}
+
 export function perbaruiHargaVoucherDiKartu() {
-  renderProduk(keadaan.ditampilkan, keadaan.dirender);
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
+  for (const kartu of $('#kisi').querySelectorAll('.kartu')) segarkanHargaVoucher(kartu);
 }
