@@ -530,63 +530,53 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
   Harga voucher dan jumlah produk bervoucher tidak berubah (uji fungsional lulus).
   Keputusan menghapus "cek kestabilan pembulatan" tetap perlu dikonfirmasi ke tim bisnis.
 
-## P-09: "+ Keranjang" baru memberi umpan balik setelah riwayat 1,2 MB dibaca dan ditulis ulang
+## P-13: Konten disisipkan belakangan tanpa ruang yang dipesan (layout shift)
 
-**Tiket terkait:** TK-1044 (utama), TK-1052
-**Tanggal dan hash commit entri ini:** 25-09-2026, hash dicatat di bagian "Sesudah"
+**Tiket terkait:** TK-1078 (utama)
+**Tanggal dan hash commit entri ini:** 16-10-2026
 
 ### Sebelum perbaikan
 
-- **Yang teramati:** micro-benchmark CPU 4x (`uji-dugaan.mjs`) untuk riwayat contoh 9000 entri (1.228.471 byte):
-  `JSON.parse` **79 ms**, `JSON.stringify` **42 ms**, `localStorage.setItem` **41 ms**. Di kode awal, handler
-  "+ Keranjang" juga memanggil SDK dengan payload itu (±400 ms, dipindahkan P-08). Pengukuran awal setelah P-02
-  (laptop masih memakai baterai): INP S2 **488 ms**, dengan teks "Ditambahkan ✓" baru muncul 485 ms setelah
-  ketukan.
-- **Dugaan mekanisme:** urutan kerja di `tambahKeKeranjang` adalah baca keranjang → **parse seluruh riwayat** →
-  (SDK) → simpan keranjang → **stringify + tulis seluruh riwayat** → baru perbarui lencana, tombol, dan toast.
-  Semua dalam satu task klik. Browser baru bisa menggambar umpan balik (rendering opportunity berikutnya)
-  setelah task selesai, jadi selama ±160 ms (plus SDK di kode awal) tombol terlihat tidak bereaksi. Pengguna
-  menekan lagi, dan setiap tekanan yang antre menambah isi keranjang (TK-1044: "tahu-tahu isi keranjang sudah 3").
-  Riwayat 1,2 MB ditulis ulang utuh hanya untuk menambah satu entri.
+- **Yang teramati:** atribut layout-shift (PerformanceObserver, `sources`) pada commit P-01, CPU 4x: pergeseran
+  **0,4737** saat kartu pertama tampil. Sumbernya: `footer.kaki` terdorong dari y=562 ke luar layar, serta
+  `div.alat-kanan` dan `#ringkasan` turun 115 px karena keping kategori baru dibuat. Lalu pergeseran **0,1368**
+  saat banner promo tiba (detik ke-80): `#alat` 362→580, kisi 627→844. Pengukuran awal commit P-02: CLS 0,14-0,61
+  pada S0. Di kode awal pada CPU 4x pergeseran ini sebagian tersembunyi, karena main thread yang terblokir
+  membuat banner kebetulan disisipkan sebelum frame pertama. Makin cepat halaman, makin terlihat masalahnya.
+  Tinggi banner sebenarnya: 248 px (≤ 360 px), 202 px (390-560 px), 177 px (768 px), 132 px (≥ 1024 px).
+- **Dugaan mekanisme:** tiga elemen baru mendapat tinggi setelah frame pertama digambar:
+  1. banner promo di-`prepend` ke `#utama` setelah `/api/promo` (±1,8 detik) tanpa ruang dipesan, sehingga semua
+     yang di bawahnya turun ±218 px;
+  2. keping kategori baru dibuat setelah data produk tiba dan membungkus 3 baris di 412 px, sehingga toolbar
+     bertambah ±127 px;
+  3. kisi kosong sampai render selesai, sehingga kaki halaman sempat tergambar di tengah layar lalu terdorong.
+  Pergeseran yang tidak didahului input dalam 500 ms dihitung ke CLS. Karena kartu produk bergeser tepat saat
+  pengguna hendak mengetuk, ketukan jatuh ke banner (TK-1078: "yang kepencet malah iklan promo").
+  Pergeseran dari gambar tanpa ukuran dan animasi `margin-top` sudah ditangani P-01 dan P-07.
 - **Rencana perubahan:**
-  - Umpan balik lebih dulu. Keranjang (beberapa item, kecil) tetap dibaca/ditulis sinkron supaya data aman,
-    lalu lencana, tombol "Ditambahkan ✓", dan toast diperbarui di task yang sama.
-  - Riwayat: entri baru ditampung di memori lalu disimpan di waktu senggang (`requestIdleCallback`) **tanpa
-    parse/stringify seluruh riwayat**. Teks entri baru disisipkan sebelum `]` pada string JSON yang tersimpan,
-    sehingga format di `localStorage` tetap array JSON yang sama dan dibaca tim rekomendasi apa adanya. Penyimpanan
-    juga dipaksa saat `pagehide`/`visibilitychange: hidden`.
-  - Konteks analitik memakai hingga 20 aktivitas sesi ini dari memori. `jumlahRiwayat` dihapus karena
-    menghitungnya butuh parse 1,2 MB.
+  - Banner: elemen `#promo-banner` sudah ada di HTML sejak awal dengan `min-height` per breakpoint sesuai tinggi
+    sebenarnya (248/202/177/132 px). `promo.js` mengisi elemen itu, tidak lagi menyisipkan elemen baru.
+  - Keping kategori: satu baris yang bisa digeser horizontal (`flex-wrap: nowrap; overflow-x: auto`) dengan
+    `min-height` satu baris yang sudah dipesan sebelum keping dibuat.
+  - Kisi: `.kisi:empty { min-height: 100vh }` selama memuat, supaya kaki halaman tidak tergambar di tengah layar.
+  - Angka hitung mundur memakai `font-variant-numeric: tabular-nums` (sudah di P-07) supaya lebarnya tidak
+    berubah-ubah.
 - **Prediksi terukur:**
-  - S2: task klik hanya berisi kerja keranjang kecil dan pembaruan DOM (±5-15 ms pada CPU 4x). INP S2 turun
-    menjadi **< 100 ms**, dan umpan balik tombol (mutasi DOM) terjadi **< 30 ms** setelah ketukan.
-  - Di waktu senggang muncul satu task ±45-60 ms (getItem + sambung string + `setItem` 1,2 MB), di luar
-    interaksi. Task ini tetap harus < 100 ms.
-  - Efek samping: bila browser crash sebelum waktu senggang tiba, entri riwayat yang tertunda hilang (bukan isi
-    keranjang). `pagehide` menutup kasus navigasi/tutup tab biasa. Bila string riwayat rusak (tidak berakhir `]`),
-    kode kembali ke jalur lama (parse + push) supaya tidak menulis JSON rusak.
+  - S0: CLS (sejak dokumen dibuat, pelapor harness) turun dari 0,14-0,61 menjadi **≤ 0,02**. Sisa pergeseran
+    hanya bila teks banner dari API membungkus lebih banyak baris daripada tinggi yang dipesan.
+  - Efek samping: kotak banner gelap kosong terlihat ±1,8 detik sebelum isinya tiba (placeholder). Keping kategori
+    di layar sempit kini harus digeser ke samping untuk melihat semuanya (kurang terlihat dibanding 3 baris,
+    tetapi kartu produk naik ±127 px dan lebih cepat terlihat). `min-height` banner harus diperbarui bila teks
+    promo berubah jauh lebih panjang.
 - **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
-  - Hanya menukar urutan (UI dulu, lalu simpan sinkron di task yang sama): tidak menolong, karena browser tetap
-    tidak menggambar sebelum task selesai.
-  - `setTimeout(0)` untuk penyimpanan: task berikutnya bisa jatuh sebelum frame dan tetap menunda umpan balik.
-  - IndexedDB (tambah per entri, asinkron): paling efisien, tetapi mengubah tempat penyimpanan yang dibaca tim
-    rekomendasi (`localStorage['tk_riwayat']`) dan butuh migrasi.
-  - Membatasi riwayat misalnya 500 entri terakhir: tulisan jadi kecil, tetapi menghapus data milik tim lain
-    (keputusan bisnis, bukan keputusan performa).
+  - Menaruh banner di bawah kisi atau sebagai lapisan melayang: tidak menggeser kartu, tetapi mengubah desain
+    dan hierarki promo secara besar, dan lapisan melayang bisa menutupi konten.
+  - Memuat promo sebelum render pertama (menunggu `/api/promo` 1,8 detik): tidak ada pergeseran, tetapi seluruh
+    halaman terlambat 1,8 detik.
+  - Membuat keping kategori dari daftar kategori statis di HTML: tidak perlu menunggu data, tetapi kategori
+    menjadi ganda sumber (HTML dan data) dan bisa tidak sinkron.
 
-### Sesudah perbaikan
 
-- **Hash commit perbaikan:** 9448769
-- **Hasil ukur (median 3 kali):** dibanding P-08 pengukuran pagi (`data/P-08-pagi`). S2: ketukan → tombol berubah 147 → **99 ms** (ulangan 97-99; P-08:
-  141-187), INP 168 → 192 ms (ulangan 184-208; P-08: 168-248), long task 141 → 134 ms.
-- **Prediksi vs kenyataan:** Arah **sesuai**: umpan balik kini konsisten ±100 ms. Besarnya **meleset**. Diprediksi
-  task klik ±5-15 ms, INP < 100 ms, dan umpan balik < 30 ms. Kenyataannya umpan balik 99 ms dan INP ±190 ms, karena
-  sisa waktunya bukan di handler klik melainkan di input delay dan frame yang menggambar perubahan (pada CPU 4x). Di
-  trace akhir `S2-sesudah.json.gz` bagian terbesarnya adalah Layout yang dipicu hit test saat ketukan (LAPORAN
-  bagian 6). Trace per ulangan untuk versi antara tidak disimpan.
-- **Efek samping yang muncul:** Task senggang untuk menyimpan riwayat tidak terlihat sebagai long task di S2 (long
-  task terlama 134 ms, sama dengan sebelumnya). Uji fungsional "riwayat aktivitas: entri tersimpan, tidak ada data
-  lama hilang" lulus.
 
 ## P-14: Setiap huruf membangun kartu baru dan memuat gambar SVG-nya
 
@@ -803,11 +793,3 @@ men-debounce render pencarian (hasil tidak mengikuti ketikan), dan virtualisasi 
   pemuat gambar menambah kerja di setiap frame. Dugaan ini belum dibuktikan dengan A/B.
 
 ---
-
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
->>>>>>>
->>>>>>
->>>>>
->>>>
->>>
->>
