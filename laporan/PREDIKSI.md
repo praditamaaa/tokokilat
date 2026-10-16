@@ -280,6 +280,61 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Efek samping yang muncul:** Pull-to-refresh kini dicegah di seluruh halaman lewat `overscroll-behavior-y`
   (sesuai prediksi). Impresi dikirim per batch IntersectionObserver (uji fungsional impresi lulus).
 
+## P-07: Timer 10 ms dan animasi yang memicu Layout/Paint di setiap frame
+
+**Tiket terkait:** TK-1070 (utama), TK-1063
+**Tanggal dan hash commit entri ini:** 16-10-2026
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace:** S6 (diam 10 detik, tanpa sentuhan) setelah P-01/P-02 (pengukuran awal, laptop masih
+  memakai baterai): main thread sibuk **94-99%**, Layout ±2 detik per 10 detik, 10-25 frame > 50 ms, dan pada commit
+  P-02 **314 Layout paksa** dalam 10 detik diam. Di trace S1 setelah P-02: 83 task "Timer Fired" dalam ±9 detik dan
+  `get offsetWidth` 173 ms self (dari `promo.js`). Di kode awal, S6 dengan 300 produk juga sibuk 97% dengan
+  83 frame > 50 ms.
+- **Dugaan mekanisme:**
+  1. Hitung mundur memakai `setInterval(10 ms)`. Setiap tick menulis 4 `textContent` (layout kotor) lalu membaca
+     `wadah.offsetWidth` (layout paksa), kemudian menulis `garis.style.width` (layout kotor lagi untuk frame).
+     Itu 100 task per detik untuk layar 60 Hz. Angka perseratus detik yang berubah tiap 10 ms pun tidak mungkin
+     tergambar lebih dari 60 kali per detik.
+  2. Teks berjalan memakai `setInterval(10 ms)` yang membaca `offsetWidth` dan menulis `style.left`. `left` adalah
+     properti layout, jadi setiap tick berarti Style + Layout + Paint.
+  3. `.lencana-kilat` dianimasikan tanpa henti pada `top` (tahap Layout) dan `box-shadow` (tahap Paint). Animasi
+     properti ini tidak bisa dijalankan compositor, jadi main thread harus menghitung style, layout, dan paint di
+     setiap frame selama ada satu saja produk kilat di DOM.
+  4. Efek kartu muncul menganimasikan `margin-top` (Layout) selama 350 ms untuk setiap kartu yang masuk layar.
+  Akibatnya main thread tidak pernah sempat diam dan idle, sehingga CPU tidak pernah turun ke keadaan hemat (HP
+  panas, baterai turun: TK-1070), dan setiap frame yang sudah berat bersaing dengan input dan guliran (TK-1063).
+- **Rencana perubahan:**
+  - Hitung mundur: jam, menit, detik, dan garis diperbarui **sekali per detik** tepat saat detik berganti
+    (`setTimeout` berantai). Garis memakai `transform: scaleX()` (tanpa Layout). Angka perseratus detik tetap ada
+    sebagai "gulungan" 99…00 yang digeser animasi `transform` dengan `steps(100)` selama 1 detik (Web Animations
+    API), sehingga berjalan di compositor. Posisinya disinkronkan dengan jam saat mulai dan saat kembali terlihat.
+  - Teks berjalan: `@keyframes` pada `transform: translateX()` (compositor). JS hanya menghitung jarak dan durasi
+    lewat ResizeObserver, dengan kecepatan tetap 100 px/detik seperti versi lama.
+  - Lencana kilat: gerak naik-turun pakai `transform`, dan denyut cahaya pakai `::after` yang dianimasikan
+    `opacity` + `transform: scale()` (keduanya properti compositor).
+  - Kartu muncul: `opacity` + `transform: translateY()` menggantikan `margin-top`.
+  - Animasi flash sale dijeda saat bagiannya di luar layar (IntersectionObserver). Semua animasi berhenti bila
+    pengguna memilih `prefers-reduced-motion`.
+- **Prediksi terukur:**
+  - S6: main thread sibuk turun dari ±95% menjadi **< 5%**. Yang tersisa adalah 1 task per detik untuk teks hitung
+    mundur, loop rAF alat ukur, dan paint kecil area angka. Task "Timer Fired" turun dari ±100 per detik menjadi
+    ±1 per detik. Layout paksa di S6 **0**. Frame > 50 ms **≤ 2 per 10 detik**.
+  - S5: frame > 50 ms turun lagi (sisa dari P-06). Target ≤ 2 per 10 detik mungkin belum tercapai karena panggilan
+    SDK impresi (±41 ms per batch) masih di main thread (P-08).
+  - Efek samping: animasi compositor tetap membuat compositor/GPU menggambar frame (bukan nol energi). Layer
+    komposit bertambah satu per lencana kilat yang ada di DOM (memori GPU). Gulungan perseratus detik yang tidak
+    bisa dibaca per 10 ms kini benar-benar hanya hiasan visual.
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  - Mengganti `setInterval` dengan `requestAnimationFrame` untuk hitung mundur: tick turun ke 60 per detik dan
+    otomatis berhenti di tab tersembunyi, tetapi main thread tetap bekerja setiap frame. Tidak mendekati nol.
+  - Menghapus angka perseratus detik: paling hemat, tetapi mengubah fitur hitung mundur (dilarang aturan 4).
+  - `will-change` pada lencana tanpa mengganti properti yang dianimasikan: tidak membantu, karena `top` dan
+    `box-shadow` tetap harus dihitung main thread.
+
+
+
 ## P-08: SDK analitik dipanggil di tengah interaksi, dengan payload riwayat 1,2 MB
 
 **Tiket terkait:** TK-1044, TK-1052, TK-1041, TK-1063
