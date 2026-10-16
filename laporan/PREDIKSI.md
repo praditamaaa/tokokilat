@@ -318,7 +318,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 ## P-09: "+ Keranjang" baru memberi umpan balik setelah riwayat 1,2 MB dibaca dan ditulis ulang
 
 **Tiket terkait:** TK-1044 (utama), TK-1052
-**Tanggal dan hash commit entri ini:** 25-09-2026, hash dicatat di bagian "Sesudah"
+**Tanggal dan hash commit entri ini:** 16-10-2026
 
 ### Sebelum perbaikan
 
@@ -378,7 +378,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 ## P-10: "Beli sekarang" tanpa penjaga permintaan ganda dan tanpa umpan balik
 
 **Tiket terkait:** TK-1052 (utama)
-**Tanggal dan hash commit entri ini:** 25-09-2026, hash dicatat di bagian "Sesudah"
+**Tanggal dan hash commit entri ini:** 16-10-2026
 
 ### Sebelum perbaikan
 
