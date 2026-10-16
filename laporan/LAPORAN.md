@@ -1,48 +1,10 @@
 # Laporan audit performa dan interaksi TokoKilat
 
-<<<<<<< HEAD
-Tim: ....  Anggota: ....  Tanggal: ....
-Panjang maksimal setara 6 halaman (tidak termasuk lampiran gambar).
+Tim: Neliti Pemdat!
 
-## 1. Ringkasan eksekutif (maks. 150 kata)
-Apa masalah terbesar, apa yang dilakukan, berapa hasilnya. Tulis untuk manajer produk, bukan untuk engineer.
+Anggota: Amalia (003), Diaz(008), Nabil(018), Praditama(023), dan Zaidan Arkan(030)   
 
-## 2. Lingkungan pengukuran
-Spesifikasi laptop, versi Chrome, jumlah produk (`npm start` atau varian lain), tingkat throttling,
-dan penyimpangan apa pun dari protokol di TUGAS.md bagian 7.
-
-## 3. Hasil sebelum dan sesudah
-
-| Skenario | Metrik | Sebelum (median) | Sesudah (median) | Target | Tercapai? |
-|---|---|---|---|---|---|
-| S0 | CLS | | | <= 0,1 | |
-| S0 | Jumlah permintaan gambar dalam 10 dtk pertama | | | sebanding dengan yang terlihat | |
-| S1 | INP | | | <= 200 ms | |
-| S1 | Long task terlama | | | <= 100 ms | |
-| S2 | INP | | | <= 200 ms | |
-| S3 | Jumlah pesanan dari 3 klik | | | 1 | |
-| S4 | INP / progres tergambar bertahap? | | | | |
-| S5 | Frame > 50 ms per 10 dtk | | | <= 2 | |
-| S6 | Frame > 50 ms per 10 dtk | | | <= 2 | |
-
-## 4. Temuan
-
-Ulangi blok berikut untuk tiap temuan. Urutkan berdasarkan dampak, bukan urutan tiket.
-
-### T-01: [judul]
-- **Tiket terkait:** ....
-- **Gejala bagi pengguna:** ....
-- **Bukti:** tangkapan layar flame chart beranotasi (tandai task, fungsi dominan, dan tahap pipeline).
-- **Akar masalah dan mekanismenya:** berkas, fungsi, dan penjelasan menurut event loop atau rendering pipeline.
-- **Kualitas yang terdampak (ISO/IEC 25010):** sub-karakteristik performance efficiency dan
-  interaction capability, beserta hubungan sebab-akibatnya.
-- **Perbaikan:** apa yang diubah dan mengapa itu bekerja.
-- **Trade-off:** alternatif yang dipertimbangkan, harga dari pilihan Anda.
-- **Hasil:** angka sebelum dan sesudah.
-
-## 5. Dugaan yang ternyata keliru
-=======
-Tim: Neliti Pemdat!  Anggota: Amalia (003), Diaz(008), Nabil(018), Praditama(023), dan Zaidan Arkan(030)   Tanggal: 25 September 2026
+Tanggal: 25 September 2026
 Panjang maksimal setara 6 halaman (tidak termasuk lampiran gambar).
 
 ## 1. Ringkasan eksekutif (maks. 150 kata)
@@ -60,32 +22,32 @@ Apa masalah terbesar, apa yang dilakukan, berapa hasilnya. Tulis untuk manajer p
 
 ## 3. Hasil sebelum dan sesudah
 
-| Skenario | Metrik                                           | Sebelum (median)               | Sesudah (median) | Target                  | Tercapai?                         |
-| -------- | ------------------------------------------------ | ------------------------------ | ---------------- | ----------------------- | --------------------------------- |
-| S0       | CLS (sejak dokumen dibuat)                       | 0 (lihat T-09)                 |                  | <= 0,1                  |                                   |
-| S0       | Permintaan gambar dalam 10 dtk pertama / total   | 0 / **3.000** (3.228 KB) |                  | sebanding yang terlihat |                                   |
-| S0       | Gambar terakhir selesai                          | 146 dtk                        |                  |                         |                                   |
-| S0       | Long task terlama saat memuat                    | **14.402 ms**            |                  |                         |                                   |
-| S1       | INP                                              | **64.302 ms**            |                  | <= 200 ms               |                                   |
-| S1       | Long task terlama                                | 41.983 ms                      |                  | <= 100 ms               |                                   |
-| S2       | INP                                              | 2.532 ms                       |                  | <= 200 ms               |                                   |
-| S2       | Ketukan -> tombol berubah                        | 1.159 ms                       |                  |                         |                                   |
-| S2       | Long task terlama                                | 1.534 ms                       |                  | <= 100 ms               |                                   |
-| S3       | Jumlah pesanan dari 3 ketukan                    | **3**                    |                  | 1                       |                                   |
-| S3       | Umpan balik pertama                              | tidak ada selama jendela ukur  |                  | pengguna tahu diproses  |                                   |
-| S3       | INP                                              | 2.634 ms                       |                  | <= 200 ms               |                                   |
-| S4       | INP                                              | **51.233 ms**            |                  | <= 200 ms               |                                   |
-| S4       | Langkah progres tergambar / frame selama progres | **0 / 0**                |                  | bertahap                |                                   |
-| S4       | Long task terlama                                | 30.390 ms                      |                  | <= 100 ms               |                                   |
-| S4       | Ketuk voucher sampai selesai                     | 51.163 ms                      |                  |                         |                                   |
-| S5       | Frame > 50 ms per 10 dtk                         | 0,9 *(lihat catatan)*        |                  | <= 2                    |                                   |
-| S5       | Waktu menggulir 14.000 px (seharusnya ±10 dtk)  | **32.433 ms**            |                  |                         |                                   |
-| S5       | Frame main thread per detik / frame terburuk     | **0,1 fps / 21.012 ms**  |                  |                         |                                   |
-| S5       | Long task terlama                                | 587 ms                         |                  | <= 100 ms               |                                   |
-| S6       | Frame > 50 ms per 10 dtk                         | 20                             |                  | <= 2                    |                                   |
-| S6       | Frame main thread per detik / frame terburuk     | 2,1 fps / 592 ms               |                  |                         |                                   |
-| S6       | Main thread sibuk, **tanpa** alat ukur     | 95,8%                          |                  | mendekati nol           |                                   |
-| S6       | Main thread sibuk, dengan alat ukur              | 96,8%                          |                  |                         | (sisa = loop rAF alat ukur, T-08) |
+| Skenario | Metrik | Sebelum (median) | Sesudah (median) | Target | Tercapai? |
+|---|---|---|---|---|---|
+| S0 | CLS (sejak dokumen dibuat) | 0 (lihat T-09) | 0 | <= 0,1 | ya |
+| S0 | Permintaan gambar dalam 10 dtk pertama / total | 0 / **3.000** (3.228 KB) | 6 / **6** (6 KB) | sebanding yang terlihat | ya |
+| S0 | Gambar terakhir selesai | 146 dtk | 2,6 dtk | | |
+| S0 | Long task terlama saat memuat | **14.402 ms** | 720 ms | | |
+| S1 | INP | **64.302 ms** | **96 ms** | <= 200 ms | ya |
+| S1 | Long task terlama | 41.983 ms | tidak ada > 50 ms (2 dari 3 ulangan; terburuk 52 ms) | <= 100 ms | ya |
+| S2 | INP | 2.532 ms | **80 ms** | <= 200 ms | ya |
+| S2 | Ketukan -> tombol berubah | 1.159 ms | 68 ms | | |
+| S2 | Long task terlama | 1.534 ms | 59 ms | <= 100 ms | ya |
+| S3 | Jumlah pesanan dari 3 ketukan | **3** | **1** | 1 | ya |
+| S3 | Umpan balik pertama | tidak ada selama jendela ukur | 69 ms ("Memproses…") | pengguna tahu diproses | ya |
+| S3 | INP | 2.634 ms | 32 ms | <= 200 ms | ya |
+| S4 | INP | **51.233 ms** | **72 ms** | <= 200 ms | ya |
+| S4 | Langkah progres tergambar / frame selama progres | **0 / 0** | 3 / 4 | bertahap | ya |
+| S4 | Long task terlama | 30.390 ms | tidak ada > 50 ms | <= 100 ms | ya |
+| S4 | Ketuk voucher sampai selesai | 51.163 ms | 1.207 ms | | |
+| S5 | Frame > 50 ms per 10 dtk | 0,9 *(lihat catatan)* | **6** (ulangan 3-8) | <= 2 | **tidak** |
+| S5 | Waktu menggulir 14.000 px (seharusnya ±10 dtk) | **32.433 ms** | 10.096 ms | | |
+| S5 | Frame main thread per detik / frame terburuk | **0,1 fps / 21.012 ms** | 46 fps / 61 ms | | |
+| S5 | Long task terlama | 587 ms | tidak ada > 50 ms | <= 100 ms | ya |
+| S6 | Frame > 50 ms per 10 dtk | 20 | **0** | <= 2 | ya |
+| S6 | Frame main thread per detik / frame terburuk | 2,1 fps / 592 ms | 60 fps / 23 ms | | |
+| S6 | Main thread sibuk, **tanpa** alat ukur | 95,8% | **2,9%** | mendekati nol | ya |
+| S6 | Main thread sibuk, dengan alat ukur | 96,8% | 39,1% | | (sisa = loop rAF alat ukur, T-08) |
 
 ## 4. Temuan
 
@@ -96,9 +58,9 @@ Berikut Temuan yang kami Temukan:
 - **Tiket terkait:** TK-1041 (utama). Secara tidak langsung semua tiket, karena selama task ini halaman beku.
 - **Gejala bagi pengguna:** setelah data tampil layar beku belasan detik. Setiap huruf yang diketik di kolom cari membekukan layar lagi, dan huruf muncul terlambat.
 - **Bukti:** satu task 14,4 detik (median) setelah `/api/produk` diproses. `g3-S1-sebelum.png`:
-    huruf kedua yang diketik di detik 0,2 baru diproses di detik 16,2, lalu huruf-huruf yang antre diproses dalam satu
-    task 42 detik. Bottom-up S1: `get offsetHeight` 31,7 detik self. Micro-benchmark `formatRupiah` 3000x: 646 ms
-    (pemformat dibuat tiap panggilan) vs 3,5 ms (pemformat disimpan).
+  huruf kedua yang diketik di detik 0,2 baru diproses di detik 16,2, lalu huruf-huruf yang antre diproses dalam satu
+  task 42 detik. Bottom-up S1: `get offsetHeight` 31,7 detik self. Micro-benchmark `formatRupiah` 3000x: 646 ms
+  (pemformat dibuat tiap panggilan) vs 3,5 ms (pemformat disimpan).
 - **Akar masalah dan mekanismenya:** `renderProduk` (`katalog.js`) membangun semua kartu dalam satu task makro, jadi
   tidak ada rendering opportunity dan input hanya antre. Biayanya linier terhadap N: `formatRupiah` (`util.js`)
   membuat `Intl.NumberFormat` baru per panggilan, `samakanTinggiJudul` menulis `style.height` dan membaca
@@ -266,13 +228,16 @@ Berikut Temuan yang kami Temukan:
 - **Hasil:** INP S1 (pagi) P-04 552 → P-05 432; P-13 488 → P-16 232 → P-17 152 ms; versi akhir (malam) **96 ms**.
 
 ## 5. Dugaan yang ternyata keliru
+
 Dugaan dari catatan serah terima, dari tiket, atau dari tim Anda sendiri yang terbantah oleh
 pengukuran. Sertakan angkanya. Bagian ini sama pentingnya dengan bagian temuan.
 
 ## 6. Yang belum beres dan rekomendasi
+
 Masalah yang tersisa, risiko, dan usulan untuk tim lain (backend, vendor SDK, desain).
 
 ## 7. Pernyataan penggunaan AI dan pembagian kerja
+
 Masalah yang tersisa, risiko, dan usulan untuk tim lain (backend, vendor SDK, desain).
 
 ## 7. Pernyataan penggunaan AI dan pembagian kerja
