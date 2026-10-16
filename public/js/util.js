@@ -9,26 +9,16 @@ export function el(tag, kelas, teks) {
   return node;
 }
 
-<<<<<<< HEAD
-export function formatRupiah(angka) {
-  const pemformat = new Intl.NumberFormat('id-ID', {
-=======
+
 // Pemformat dibuat sekali saja. Membuat Intl.NumberFormat (atau memanggil toLocaleString('id-ID'))
 // berarti negosiasi locale dan membangun pemformat ICU dari awal; di setiap kartu itu ±1 ms (CPU 4x).
-  const PEMFORMAT_RUPIAH = new Intl.NumberFormat('id-ID', {
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
+const PEMFORMAT_RUPIAH = new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     maximumFractionDigits: 0,
-  });
-<<<<<<< HEAD
-  return pemformat.format(angka);
-}
+});
 
-export function formatRibuan(angka) {
-  if (angka >= 1000) return (Math.floor(angka / 100) / 10).toLocaleString('id-ID') + ' rb';
-=======
-  const PEMFORMAT_ANGKA = new Intl.NumberFormat('id-ID');
+const PEMFORMAT_ANGKA = new Intl.NumberFormat('id-ID');
 
 export function formatRupiah(angka) {
   return PEMFORMAT_RUPIAH.format(angka);
@@ -41,7 +31,6 @@ export function formatAngka(angka) {
 
 export function formatRibuan(angka) {
   if (angka >= 1000) return formatAngka(Math.floor(angka / 100) / 10) + ' rb';
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
   return String(angka);
 }
 
@@ -49,8 +38,6 @@ export function hargaSetelahDiskon(produk) {
   return Math.round((produk.harga * (100 - produk.diskon)) / 100 / 100) * 100;
 }
 
-<<<<<<< HEAD
-=======
 // Jalankan fn saat main thread senggang (paling lambat setelah batasMs), untuk kerja yang tidak
 // mendesak dan tidak boleh menunda umpan balik interaksi.
 export function saatSenggang(fn, batasMs = 3000) {
@@ -58,7 +45,6 @@ export function saatSenggang(fn, batasMs = 3000) {
   else setTimeout(fn, 300);
 }
 
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 // Salinan dalam (deep copy) supaya objek konfigurasi tidak termutasi.
 export function salinDalam(objek) {
   return JSON.parse(JSON.stringify(objek));
