@@ -6,7 +6,6 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ---
 
-<<<<<<< HEAD
 
 ## P-01: [judul singkat masalah]
 
@@ -124,22 +123,12 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 1. Memformat angka secara manual dengan regex pemisah ribuan memang lebih cepat tetapi rawan salah locate dan karena mata uangnya. Keuntungannya kecil dibanding pemformat yang disimpan.
 2. Memoisasi string per nilai harga (Map) dapat menambah memori string dan kompleksitas, sedangkan 'format()' pada performat tersimpan sudah -+ 5 microsecond.
 
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
->>>>>>>
->>>>>>
->>>>>
->>>>
->>>
->>
-
 ### Sesudah perbaikan
 
 - **Hash commit perbaikan:** ....
-  <<<<<<< HEAD
 - **Hasil ukur (median 3 kali):** ....
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
-  ==============================
 - **Hasil ukur (median 3 kali):** dibanding P-02. Long task saat memuat 1.535 -> 1.161 ms
   (ulangan 945-1.358).INP S1 1.464 -> 2.056 ms (ulangan 1.168-2.544; P-02:
   688-2.168). Long task S1 644 -> 870 ms. Micro-benchmark `formatRupiah` 3000x
@@ -325,6 +314,108 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - INP S2 ±200-300 ms: menunjukkan lebih baik daripada prediksi (128 ms). Sisa `JSON.parse`/`stringify`/`setItem` riwayat (P-09) ternyata lebih murah daripada perkiraan, yang diukur saat baterai. S1 lebih ringan per huruf: arah sesuai, tetapi di dalam variasi. S5 turun karena tidak ada lagi SDK di callback gulir: sesuai. Dengan 4 frame > 50 ms per 10 detik, S5 pada versi ini hampir mencapai target (≤ 2).
 - **Efek samping yang muncul:**
 - Event tiba 0-3 detik lebih lambat, dan ketujuh jenis event tetap terkirim (uji fungsional).pengukuran pagi untuk commit yang sama (`data/P-08-pagi`) memberi S5 79-89 frame > 50 ms per 10 detik, 20 kali lipat pengukuran malam. Perbedaan ini bukan efek P-08, melainkan kondisi mesin (Catatan metode). Sehingga perbandingan S5 hanya sah di dalam satu jendela pengukuran
+
+## P-09: "+ Keranjang" baru memberi umpan balik setelah riwayat 1,2 MB dibaca dan ditulis ulang
+
+**Tiket terkait:** TK-1044 (utama), TK-1052
+**Tanggal dan hash commit entri ini:** 25-09-2026, hash dicatat di bagian "Sesudah"
+
+### Sebelum perbaikan
+
+- **Yang teramati:** micro-benchmark CPU 4x (`uji-dugaan.mjs`) untuk riwayat contoh 9000 entri (1.228.471 byte):
+  `JSON.parse` **79 ms**, `JSON.stringify` **42 ms**, `localStorage.setItem` **41 ms**. Di kode awal, handler
+  "+ Keranjang" juga memanggil SDK dengan payload itu (±400 ms, dipindahkan P-08). Pengukuran awal setelah P-02
+  (laptop masih memakai baterai): INP S2 **488 ms**, dengan teks "Ditambahkan ✓" baru muncul 485 ms setelah
+  ketukan.
+- **Dugaan mekanisme:** urutan kerja di `tambahKeKeranjang` adalah baca keranjang → **parse seluruh riwayat** →
+  (SDK) → simpan keranjang → **stringify + tulis seluruh riwayat** → baru perbarui lencana, tombol, dan toast.
+  Semua dalam satu task klik. Browser baru bisa menggambar umpan balik (rendering opportunity berikutnya)
+  setelah task selesai, jadi selama ±160 ms (plus SDK di kode awal) tombol terlihat tidak bereaksi. Pengguna
+  menekan lagi, dan setiap tekanan yang antre menambah isi keranjang (TK-1044: "tahu-tahu isi keranjang sudah 3").
+  Riwayat 1,2 MB ditulis ulang utuh hanya untuk menambah satu entri.
+- **Rencana perubahan:**
+  - Umpan balik lebih dulu. Keranjang (beberapa item, kecil) tetap dibaca/ditulis sinkron supaya data aman,
+    lalu lencana, tombol "Ditambahkan ✓", dan toast diperbarui di task yang sama.
+  - Riwayat: entri baru ditampung di memori lalu disimpan di waktu senggang (`requestIdleCallback`) **tanpa
+    parse/stringify seluruh riwayat**. Teks entri baru disisipkan sebelum `]` pada string JSON yang tersimpan,
+    sehingga format di `localStorage` tetap array JSON yang sama dan dibaca tim rekomendasi apa adanya. Penyimpanan
+    juga dipaksa saat `pagehide`/`visibilitychange: hidden`.
+  - Konteks analitik memakai hingga 20 aktivitas sesi ini dari memori. `jumlahRiwayat` dihapus karena
+    menghitungnya butuh parse 1,2 MB.
+- **Prediksi terukur:**
+  - S2: task klik hanya berisi kerja keranjang kecil dan pembaruan DOM (±5-15 ms pada CPU 4x). INP S2 turun
+    menjadi **< 100 ms**, dan umpan balik tombol (mutasi DOM) terjadi **< 30 ms** setelah ketukan.
+  - Di waktu senggang muncul satu task ±45-60 ms (getItem + sambung string + `setItem` 1,2 MB), di luar
+    interaksi. Task ini tetap harus < 100 ms.
+  - Efek samping: bila browser crash sebelum waktu senggang tiba, entri riwayat yang tertunda hilang (bukan isi
+    keranjang). `pagehide` menutup kasus navigasi/tutup tab biasa. Bila string riwayat rusak (tidak berakhir `]`),
+    kode kembali ke jalur lama (parse + push) supaya tidak menulis JSON rusak.
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  - Hanya menukar urutan (UI dulu, lalu simpan sinkron di task yang sama): tidak menolong, karena browser tetap
+    tidak menggambar sebelum task selesai.
+  - `setTimeout(0)` untuk penyimpanan: task berikutnya bisa jatuh sebelum frame dan tetap menunda umpan balik.
+  - IndexedDB (tambah per entri, asinkron): paling efisien, tetapi mengubah tempat penyimpanan yang dibaca tim
+    rekomendasi (`localStorage['tk_riwayat']`) dan butuh migrasi.
+  - Membatasi riwayat misalnya 500 entri terakhir: tulisan jadi kecil, tetapi menghapus data milik tim lain
+    (keputusan bisnis, bukan keputusan performa).
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:**
+- **Hasil ukur (median 3 kali):** 
+- **Prediksi vs kenyataan:** 
+- **Efek samping yang muncul:** 
+
+---
+
+## P-10: "Beli sekarang" tanpa penjaga permintaan ganda dan tanpa umpan balik
+
+**Tiket terkait:** TK-1052 (utama)
+**Tanggal dan hash commit entri ini:** 25-09-2026, hash dicatat di bagian "Sesudah"
+
+### Sebelum perbaikan
+
+- **Yang teramati:** uji fungsional di kode awal: tiga klik cepat pada satu produk menghasilkan **3 pesanan** di
+  server, dan selama diproses teks tombol tetap "Beli sekarang". Pengukuran awal S3 setelah P-02 (laptop masih
+  memakai baterai): **3 pesanan** dari 3 ketukan, INP 1.624 ms, dan perubahan tampilan pertama baru muncul
+  **2.000 ms** setelah ketukan pertama ("Dipesan ✓", setelah respons server). Log server mencatat 3 baris
+  `[pesanan]`.
+- **Dugaan mekanisme:** setiap klik memulai `beliSekarang()` baru. Tidak ada penanda "sedang diproses", jadi tiga
+  klik menghasilkan tiga `fetch('POST /api/pesanan')` yang berjalan bersamaan, dan server (tanpa kunci
+  idempotensi) membuat tiga pesanan. Umpan balik pertama baru ditulis setelah `await fetch()` dan
+  `await respons.json()` selesai: minimal 350 ms latensi server ditambah antrean task (di kode awal juga
+  parse/stringify riwayat dan SDK 1,2 MB sebelum `fetch` dikirim). Selama itu tombol tampak "diam saja" dan
+  pengguna menekan lagi. Ini masalah *user error protection*: antarmuka tidak mencegah kesalahan yang dipicunya
+  sendiri. Kode server tidak boleh diubah, jadi penjaga harus ada di klien.
+- **Rencana perubahan:**
+  - Penjaga per produk (`Set` id yang sedang diproses). Ketukan ulang selama pesanan diproses diabaikan.
+  - Umpan balik di task klik yang sama: teks "Memproses…", `aria-busy="true"`, `aria-disabled="true"`, dan gaya
+    visual sibuk. Atribut `disabled` sengaja tidak dipakai supaya fokus keyboard dan pembaca layar tidak hilang.
+  - Setelah berhasil: "Dipesan ✓" selama 1,5 detik (masih dijaga, supaya ketukan yang tertinggal tidak menjadi
+    pesanan kedua), toast berisi nomor pesanan, dan lencana diperbarui.
+  - Bila gagal (jaringan/HTTP): toast pesan kesalahan dan tombol kembali siap. Di kode awal, kegagalan membuat
+    promise ditolak tanpa penanganan dan tombol tidak memberi tahu apa pun.
+- **Prediksi terukur:**
+  - S3: jumlah pesanan dari 3 ketukan cepat **tepat 1**. Lencana "Pesanan" menjadi 1.
+  - Perubahan tampilan pertama ("Memproses…") **< 50 ms** setelah ketukan. INP S3 **< 200 ms**.
+  - Efek samping: pengguna yang memang ingin memesan produk yang sama dua kali harus menunggu ±1,5 detik setelah
+    pesanan pertama selesai. Penjaga hanya melindungi satu tab; dua tab yang sama tetap bisa menggandakan pesanan.
+    Solusi tuntasnya kunci idempotensi di server (rekomendasi untuk tim backend).
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  - `button.disabled = true`: sederhana, tetapi fokus keyboard hilang dan pembaca layar tidak mengumumkan apa-apa.
+  - Debounce klik berbasis waktu (misal 500 ms): gagal bila server lebih lambat dari jendela debounce, dan tetap
+    tanpa umpan balik.
+  - Kunci idempotensi di body permintaan: benar secara arsitektur, tetapi server tidak membacanya (di luar
+    ruang lingkup).
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** 
+- **Hasil ukur (median 3 kali):** 
+- **Prediksi vs kenyataan:** 
+- **Efek samping yang muncul:** 
+
+---
 
 ## P-11: Perhitungan Voucher "async" tetap satu task panjang tanpa kesempatan menggambar
 

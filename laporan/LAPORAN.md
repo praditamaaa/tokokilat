@@ -266,21 +266,15 @@ Berikut Temuan yang kami Temukan:
 - **Hasil:** INP S1 (pagi) P-04 552 → P-05 432; P-13 488 → P-16 232 → P-17 152 ms; versi akhir (malam) **96 ms**.
 
 ## 5. Dugaan yang ternyata keliru
-
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 Dugaan dari catatan serah terima, dari tiket, atau dari tim Anda sendiri yang terbantah oleh
 pengukuran. Sertakan angkanya. Bagian ini sama pentingnya dengan bagian temuan.
 
 ## 6. Yang belum beres dan rekomendasi
-<<<<<<< HEAD
 Masalah yang tersisa, risiko, dan usulan untuk tim lain (backend, vendor SDK, desain).
 
 ## 7. Pernyataan penggunaan AI dan pembagian kerja
-=======
-
 Masalah yang tersisa, risiko, dan usulan untuk tim lain (backend, vendor SDK, desain).
 
 ## 7. Pernyataan penggunaan AI dan pembagian kerja
 
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 Alat AI yang dipakai dan untuk apa. Kontribusi tiap anggota.
