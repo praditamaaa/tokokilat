@@ -414,9 +414,18 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 ### Sesudah perbaikan
 
 - **Hash commit perbaikan:**
+  `a0b788b` (entri prediksi ini di-commit lebih dulu: `c736740`)
 - **Hasil ukur (median 3 kali):**
+  dibanding P-11. S4: ketuk voucher sampai selesai 6.560 → **1.202 ms** (ulangan
+  1.201-1.209). Langkah progres tergambar 44 → 4 (2-5). INP S4 232 → 288 ms (136-328), long task 133 → 163 ms.
+  Micro-benchmark `hitungHargaPromo` 3000 produk: 5.050 → 183 ms.
 - **Prediksi vs kenyataan:**
+  Waktu total < 1,5 detik: **sesuai**. Progres tetap tergambar bertahap: **sesuai**,
+  tetapi hanya 2-5 langkah, lebih sedikit daripada perkiraan ±45 irisan. Irisannya banyak, tetapi frame yang
+  tergambar sedikit (lihat P-11). INP naik dalam rentang yang tumpang tindih (variasi).
 - **Efek samping yang muncul:**
+  Harga voucher dan jumlah produk bervoucher tidak berubah (uji fungsional lulus).
+  Keputusan menghapus "cek kestabilan pembulatan" tetap perlu dikonfirmasi ke tim bisnis.
 
 ## P-09: "+ Keranjang" baru memberi umpan balik setelah riwayat 1,2 MB dibaca dan ditulis ulang
 
