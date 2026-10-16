@@ -22,7 +22,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Prediksi terukur:** "Setelah perubahan, [metrik] turun dari ... menjadi sekitar ..., karena ...".
   Sertakan juga prediksi efek samping: apa yang mungkin menjadi *lebih buruk*?
 - **Alternatif yang dipertimbangkan dan alasan tidak dipilih:** ....
-  =======
+  ==============================================================
 
 ## P-01: 3000 gambar diminta sekaligus dan tanpa ukuran
 
@@ -139,7 +139,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Hasil ukur (median 3 kali):** ....
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
-  =======
+  ==============================
 - **Hasil ukur (median 3 kali):** dibanding P-02. Long task saat memuat 1.535 -> 1.161 ms
   (ulangan 945-1.358).INP S1 1.464 -> 2.056 ms (ulangan 1.168-2.544; P-02:
   688-2.168). Long task S1 644 -> 870 ms. Micro-benchmark `formatRupiah` 3000x
@@ -377,18 +377,39 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
   dijamin oleh rancangan, belum oleh uji otomatis: `uji-voucher-sela.mjs` tidak bisa menyela lewat DevTools karena
   lanjutan `scheduler.yield()` didahulukan (AUDIT-AI A-02).
 
-## P-12:
+## P-12: 40 kali simulasi cicilan per produk yang hasilnya dibuang
 
-**Tiket terkait:**
-**Tanggal dan hash commit entri ini:**
+**Tiket terkait:** TK-1057
+**Tanggal dan hash commit entri ini:** 16-10-2026
 
 ### Sebelum perbaikan
 
 - **Yang teramati di trace (baseline):**
+  micro-benchmark CPU 4x (`uji-dugaan.mjs`): perhitungan voucher untuk 3000 produk dengan
+  41 panggilan `simulasiCicilan` per produk (baris `for (let i = 0; i < 40; i++) simulasiCicilan(hargaAkhir + i)`
+  plus 1 yang dipakai) = **7.666 ms**. Dengan 1 panggilan per produk = **370 ms**. Di trace S4 kode awal,
+  `simulasiCicilan` mendominasi bottom-up task voucher.
 - **Dugaan mekanisme:**
+  `simulasiCicilan` adalah fungsi murni: hanya variabel lokal dan `Math`, tanpa efek samping.
+  Keempat puluh hasil pada loop "cek kestabilan pembulatan" tidak disimpan, tidak dibandingkan, dan tidak
+  memengaruhi `hargaAkhir` maupun `cicilan` yang dikembalikan. Jadi 40/41 kerja CPU (±97%) tidak menghasilkan
+  apa pun. Setelah P-11 halaman tetap responsif, tetapi pengguna menunggu seluruh kerja sia-sia itu selesai.
 - **Rencana perubahan:**
+  hapus loop 40 kali. `simulasiCicilan(hargaAkhir)` yang benar-benar dipakai tetap
+  dijalankan untuk setiap produk, jadi aturan bisnis cicilan 0% tetap ada dan hasilnya sama.
 - **Prediksi terukur:**
-- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+- S4: waktu dari ketukan voucher sampai selesai turun dari ±9-11 detik (setelah P-11) menjadi **< 1,5 detik**.
+  Progres tetap tergambar bertahap, tetapi dalam lebih sedikit langkah (±370 ms kerja / 8 ms per irisan ≈ 45
+  irisan).
+- Harga voucher dan simulasi cicilan tidak berubah (uji fungsional: jumlah produk bervoucher dan harga di
+  kartu sama).
+- Efek samping: bila tim bisnis memang membutuhkan pemeriksaan kestabilan pembulatan, tempatnya di uji otomatis
+  saat pengembangan, bukan dijalankan 120.000 kali di HP pembeli setiap kali voucher dipakai. Ini perlu
+  dikonfirmasi ke tim bisnis.
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:|**
+  memindahkan loop ke Web Worker (kerja sia-sia
+  tetap memakan CPU/baterai, hanya di thread lain) atau memoisasi `simulasiCicilan` per harga (hasil 40 panggilan
+  itu tetap tidak dipakai).
 
 ### Sesudah perbaikan
 
