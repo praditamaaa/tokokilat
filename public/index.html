@@ -1,21 +1,26 @@
 <!doctype html>
 <html lang="id">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TokoKilat - Flash Sale 12.12</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
   <link rel="stylesheet" href="/css/toko.css">
   <!-- SDK analitik dari vendor (wajib ada menurut tim marketing) -->
   <script src="/vendor/lacak.min.js"></script>
 </head>
+
 <body>
   <a class="lompat" href="#kisi">Langsung ke daftar produk</a>
 
   <header class="kepala" id="kepala">
     <div class="kepala-isi">
       <a class="merek-toko" href="/" aria-label="TokoKilat, beranda">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 1 4 13.5h6L8.5 23 20 9.5h-6.5z"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M13.5 1 4 13.5h6L8.5 23 20 9.5h-6.5z" />
+        </svg>
         TokoKilat
       </a>
       <div class="cari">
@@ -23,7 +28,8 @@
         <input id="kolom-cari" type="search" autocomplete="off" placeholder="Cari produk, merek, atau kota pengirim">
       </div>
       <button class="tombol-kepala" id="tombol-pesanan" type="button">Pesanan <b id="lencana-pesanan">0</b></button>
-      <button class="tombol-kepala" id="tombol-keranjang" type="button" aria-controls="panel-keranjang" aria-expanded="false">Keranjang <b id="lencana-keranjang">0</b></button>
+      <button class="tombol-kepala" id="tombol-keranjang" type="button" aria-controls="panel-keranjang"
+        aria-expanded="false">Keranjang <b id="lencana-keranjang">0</b></button>
     </div>
     <div class="bar-gulir" id="bar-gulir" aria-hidden="true"></div>
   </header>
@@ -44,7 +50,9 @@
     </div>
     <div class="berjalan" aria-hidden="true">
       <div class="berjalan-teks" id="berjalan-teks">
-        Gratis ongkir se-Indonesia &nbsp;⚡&nbsp; Voucher KILAT1212 potongan sampai Rp120.000 &nbsp;⚡&nbsp; Cicilan 0% sampai 24 bulan &nbsp;⚡&nbsp; Garansi uang kembali 7 hari &nbsp;⚡&nbsp; Bayar di tempat tersedia di 400+ kota &nbsp;⚡&nbsp; Stok flash sale terbatas, siapa cepat dia dapat
+        Gratis ongkir se-Indonesia &nbsp;⚡&nbsp; Voucher KILAT1212 potongan sampai Rp120.000 &nbsp;⚡&nbsp; Cicilan 0%
+        sampai 24 bulan &nbsp;⚡&nbsp; Garansi uang kembali 7 hari &nbsp;⚡&nbsp; Bayar di tempat tersedia di 400+ kota
+        &nbsp;⚡&nbsp; Stok flash sale terbatas, siapa cepat dia dapat
       </div>
     </div>
   </section>
@@ -72,17 +80,16 @@
 
     <div class="progres" id="progres" hidden>
       <div class="progres-teks" id="progres-teks">Menghitung harga promo…</div>
-      <div class="progres-jalur"><div class="progres-isi" id="progres-isi"></div></div>
+      <div class="progres-jalur">
+        <div class="progres-isi" id="progres-isi"></div>
+      </div>
     </div>
 
     <p class="ringkasan" id="ringkasan" aria-live="polite">Memuat produk…</p>
     <div class="kisi" id="kisi"></div>
-<<<<<<< HEAD
-=======
     <div class="ujung-kisi" id="ujung-kisi" hidden>
       <button type="button" id="muat-lagi">Tampilkan produk berikutnya</button>
     </div>
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
   </main>
 
   <aside class="panel" id="panel-keranjang" aria-label="Keranjang belanja" hidden>
@@ -120,4 +127,5 @@
 
   <script type="module" src="/js/main.js"></script>
 </body>
+
 </html>

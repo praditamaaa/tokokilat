@@ -82,10 +82,16 @@ function pasangTeksBerjalan() {
 }
 
 async function pasangBannerPromo() {
-  const respons = await fetch('/api/promo');
-  const promo = await respons.json();
+  const banner = $('#promo-banner');
+  let promo;
+  try {
+    const respons = await fetch('/api/promo');
+    promo = await respons.json();
+  } catch {
+    banner.removeAttribute('aria-busy');
+    return;
+  }
 
-  const banner = el('section', 'promo-banner');
   const teks = el('div');
   teks.append(el('h2', '', promo.judul), el('p', '', promo.isi));
   const tombol = el('button', '', promo.tombol);
@@ -95,8 +101,7 @@ async function pasangBannerPromo() {
     analitik.kirim('promo_click', { judul: promo.judul });
   });
   banner.append(teks, tombol);
-
-  $('#utama').prepend(banner);
+  banner.removeAttribute('aria-busy');
 }
 
 export function pasangPromo() {
