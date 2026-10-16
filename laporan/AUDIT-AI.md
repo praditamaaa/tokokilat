@@ -27,4 +27,8 @@ Alat AI yang dipakai: ....  Branch atau commit tempat usulan diterapkan: ....
 ---
 
 ## Refleksi (maks. 200 kata)
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 Untuk jenis pekerjaan apa AI paling membantu di tugas ini, dan di mana Anda harus paling waspada?

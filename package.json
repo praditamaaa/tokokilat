@@ -5,6 +5,7 @@
   "description": "Storefront TokoKilat - kampanye Flash Sale 12.12",
   "type": "commonjs",
   "scripts": {
+<<<<<<< HEAD
   "start": "node server.js",
   "start:ringan": "cross-env JUMLAH_PRODUK=1500 node server.js",
   "start:berat": "cross-env JUMLAH_PRODUK=5000 node server.js"
@@ -15,4 +16,11 @@
   "devDependencies": {
     "cross-env": "^10.1.0"
   }
+=======
+    "start": "node server.js",
+    "start:ringan": "JUMLAH_PRODUK=1500 node server.js",
+    "start:berat": "JUMLAH_PRODUK=5000 node server.js"
+  },
+  "engines": { "node": ">=18" }
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 }

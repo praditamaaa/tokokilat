@@ -1,7 +1,12 @@
 // Keranjang belanja, riwayat penelusuran, dan "Beli sekarang".
 // Semua disimpan di localStorage supaya tetap ada walau halaman dimuat ulang.
+<<<<<<< HEAD
 
 import { $, el, formatRupiah, hargaSetelahDiskon, salinDalam, tampilkanToast } from './util.js';
+=======
+import { $, el, formatRupiah, hargaSetelahDiskon, saatSenggang, salinDalam, tampilkanToast } from './util.js';
+import * as analitik from './analitik.js';
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 
 const KUNCI_KERANJANG = 'tk_keranjang';
 const KUNCI_RIWAYAT = 'tk_riwayat';
@@ -21,6 +26,49 @@ function simpanRiwayat(riwayat) {
   localStorage.setItem(KUNCI_RIWAYAT, JSON.stringify(riwayat));
 }
 
+<<<<<<< HEAD
+=======
+// Riwayat (±9000 entri, ±1,2 MB JSON) tidak lagi di-parse lalu di-stringify utuh di setiap klik.
+// Entri baru ditampung di memori, lalu di waktu senggang teks JSON-nya disisipkan sebelum "]" pada
+// string yang tersimpan: format di localStorage tetap array JSON yang sama untuk tim rekomendasi.
+const riwayatTertunda = [];
+const riwayatSesi = []; // hingga 20 aktivitas terakhir sesi ini, untuk konteks analitik
+let simpanTerjadwal = false;
+
+function catatRiwayat(entri) {
+  riwayatTertunda.push(entri);
+  riwayatSesi.push(entri);
+  if (riwayatSesi.length > 20) riwayatSesi.shift();
+  if (!simpanTerjadwal) {
+    simpanTerjadwal = true;
+    saatSenggang(simpanRiwayatTertunda);
+  }
+}
+
+function simpanRiwayatTertunda() {
+  simpanTerjadwal = false;
+  if (!riwayatTertunda.length) return;
+  const entri = riwayatTertunda.splice(0);
+  const lama = localStorage.getItem(KUNCI_RIWAYAT) || '[]';
+  if (lama === '[]') {
+    localStorage.setItem(KUNCI_RIWAYAT, JSON.stringify(entri));
+  } else if (lama.endsWith(']')) {
+    localStorage.setItem(KUNCI_RIWAYAT, lama.slice(0, -1) + ',' + entri.map((e) => JSON.stringify(e)).join(',') + ']');
+  } else {
+    // teks tersimpan tidak berbentuk array utuh: pakai jalur lama supaya tidak menulis JSON rusak
+    const riwayat = bacaRiwayat();
+    riwayat.push(...entri);
+    simpanRiwayat(riwayat);
+  }
+}
+
+// Jangan kehilangan entri yang masih tertunda saat halaman ditutup atau ditinggal.
+window.addEventListener('pagehide', simpanRiwayatTertunda);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') simpanRiwayatTertunda();
+});
+
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 // Riwayat aktivitas dipakai tim rekomendasi ("Karena kamu melihat...").
 // Untuk pengembangan, kita isi dengan data contoh pelanggan lama yang aktif
 // sejak 2023 supaya kondisinya mirip pengguna sungguhan.
@@ -37,8 +85,13 @@ export function siapkanRiwayatContoh(semuaProduk) {
   simpanRiwayat(riwayat);
 }
 
+<<<<<<< HEAD
 export function perbaruiLencana() {
   const total = bacaKeranjang().reduce((n, item) => n + item.jumlah, 0);
+=======
+export function perbaruiLencana(isi = bacaKeranjang()) {
+  const total = isi.reduce((n, item) => n + item.jumlah, 0);
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
   $('#lencana-keranjang').textContent = total;
 }
 
@@ -68,12 +121,16 @@ function gambarPanel() {
 export function tambahKeKeranjang(produk, tombol) {
   const konfig = salinDalam(KONFIG);
   const keranjang = bacaKeranjang();
+<<<<<<< HEAD
   const riwayat = bacaRiwayat();
+=======
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 
   const ada = keranjang.find((item) => item.id === produk.id);
   if (ada) ada.jumlah = Math.min(ada.jumlah + 1, konfig.maksPerProduk);
   else keranjang.push({ id: produk.id, nama: produk.nama, harga: hargaSetelahDiskon(produk), jumlah: 1 });
 
+<<<<<<< HEAD
   riwayat.push({ t: Date.now(), jenis: 'keranjang', id: produk.id, nama: produk.nama, kategori: produk.kategori, harga: produk.harga });
 
   // Tim data minta konteks selengkap mungkin di setiap event.
@@ -84,6 +141,12 @@ export function tambahKeKeranjang(produk, tombol) {
 
   // Data sudah aman tersimpan, baru tampilan diperbarui.
   perbaruiLencana();
+=======
+  simpanKeranjang(keranjang);
+
+  // Umpan balik di task yang sama, sehingga tergambar di frame berikutnya.
+  perbaruiLencana(keranjang);
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
   tombol.textContent = 'Ditambahkan ✓';
   tombol.classList.add('sudah');
   setTimeout(() => {
@@ -91,14 +154,28 @@ export function tambahKeKeranjang(produk, tombol) {
     tombol.classList.remove('sudah');
   }, 1500);
   tampilkanToast('Ditambahkan ke keranjang: ' + produk.nama);
+<<<<<<< HEAD
+=======
+  
+  // Yang tidak mendesak menyusul di waktu senggang: riwayat dan analitik (produk, isi keranjang,
+  // dan aktivitas terakhir sesi ini; bukan riwayat 9000 entri yang harus di-parse dulu).
+  catatRiwayat({ t: Date.now(), jenis: 'keranjang', id: produk.id, nama: produk.nama, kategori: produk.kategori, harga: produk.harga });
+  analitik.kirim('add_to_cart', { produk: analitik.ringkasProduk(produk), keranjang, riwayatTerakhir: riwayatSesi.slice(), sumber: konfig.sumber });
+
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 }
 
 export async function beliSekarang(produk, tombol) {
   const konfig = salinDalam(KONFIG);
+<<<<<<< HEAD
   const riwayat = bacaRiwayat();
   riwayat.push({ t: Date.now(), jenis: 'beli', id: produk.id, nama: produk.nama, kategori: produk.kategori, harga: produk.harga });
   window.Lacak.kirim('begin_checkout', { produk, riwayat, sumber: konfig.sumber });
   simpanRiwayat(riwayat);
+=======
+  catatRiwayat({ t: Date.now(), jenis: 'beli', id: produk.id, nama: produk.nama, kategori: produk.kategori, harga: produk.harga });
+  analitik.kirim('begin_checkout', { produk: analitik.ringkasProduk(produk), riwayatTerakhir: riwayatSesi.slice(), sumber: konfig.sumber });
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 
   const respons = await fetch('/api/pesanan', {
     method: 'POST',

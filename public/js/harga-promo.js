@@ -1,8 +1,14 @@
 // Voucher: menghitung harga promo untuk setiap produk.
 // Aturan promo bertingkat + simulasi cicilan ditentukan tim bisnis.
 
+<<<<<<< HEAD
 import { $, hargaSetelahDiskon, tampilkanToast } from './util.js';
 import { keadaan, perbaruiHargaVoucherDiKartu } from './katalog.js';
+=======
+import { $, formatAngka, hargaSetelahDiskon, tampilkanToast } from './util.js';
+import { keadaan, perbaruiHargaVoucherDiKartu } from './katalog.js';
+import * as analitik from './analitik.js';
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 
 const VOUCHER = {
   KILAT1212: { persen: 12, maksPotongan: 120000, minBelanja: 50000 },
@@ -68,8 +74,13 @@ async function terapkanVoucher(kode) {
 
   perbaruiHargaVoucherDiKartu();
   progres.hidden = true;
+<<<<<<< HEAD
   tampilkanToast('Voucher ' + kode + ' dipakai di ' + keadaan.hargaVoucher.size.toLocaleString('id-ID') + ' produk.');
   if (window.Lacak) window.Lacak.kirim('apply_voucher', { kode, jumlah: keadaan.hargaVoucher.size });
+=======
+  tampilkanToast('Voucher ' + kode + ' dipakai di ' + formatAngka(keadaan.hargaVoucher.size) + ' produk.');
+  analitik.kirim('apply_voucher', { kode, jumlah: keadaan.hargaVoucher.size });
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 }
 
 export function pasangVoucher() {

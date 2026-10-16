@@ -3,12 +3,21 @@
 Tugas problem solving untuk materi **Browser sebagai Runtime: Event Loop dan Rendering Pipeline**
 Karakteristik kualitas yang disorot (ISO/IEC 25010:2023): **Performance efficiency** dan **Interaction capability**
 
+<<<<<<< HEAD
 | | |
 |---|---|
 | Mata kuliah | `[isi nama mata kuliah]` |
 | Bentuk | Tim 3-4 orang, ditambah sesi debugging langsung per individu |
 | Durasi | 3 minggu kalender (perkiraan usaha 16-24 jam per tim) |
 | Tenggat | `[isi tanggal]` |
+=======
+|             |                                                              |
+| ----------- | ------------------------------------------------------------ |
+| Mata kuliah | `[isi nama mata kuliah]`                                   |
+| Bentuk      | Tim 3-4 orang, ditambah sesi debugging langsung per individu |
+| Durasi      | 3 minggu kalender (perkiraan usaha 16-24 jam per tim)        |
+| Tenggat     | `[isi tanggal]`                                            |
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 
 ---
 
@@ -49,33 +58,65 @@ Ini satu-satunya informasi masalah yang Anda terima. Tiket ditulis pelanggan, bu
 ada yang akurat, ada yang berlebihan, ada yang salah menebak penyebab.
 
 **TK-1041, Bu Wulan, Android entry-level**
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 > Saya ketik "sepatu" di kolom cari, hurufnya munculnya telat-telat, kadang HP seperti hang.
 > Akhirnya saya cari di toko sebelah.
 
 **TK-1044, Pak Anton, Android 3 tahun**
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 > Pencet "+ Keranjang" tidak ada reaksi apa-apa. Saya pencet lagi, pencet lagi. Tahu-tahu isi
 > keranjang sudah 3. Tolong diperbaiki, saya kira tombolnya rusak.
 
 **TK-1052, Mbak Sari**
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 > SAYA CUMA BELI SATU. Kenapa tagihannya tiga pesanan?? Saya pencet "Beli sekarang", diam saja,
 > ya saya pencet lagi. Minta refund.
 
 **TK-1057, Mas Dimas**
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 > Masukin voucher KILAT1212, layarnya beku lama banget. Ada tulisan "menghitung 0%" terus
 > tiba-tiba langsung selesai. Saya kira aplikasinya crash. Sempat mau scroll juga tidak bisa.
 
 **TK-1063, Bu Ningsih**
+<<<<<<< HEAD
 > Scroll daftar barangnya patah-patah, tidak enak dilihat. Di aplikasi lain lancar kok.
 
 **TK-1070, Pak Yusuf**
+=======
+
+> Scroll daftar barangnya patah-patah, tidak enak dilihat. Di aplikasi lain lancar kok.
+
+**TK-1070, Pak Yusuf**
+
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 > Baru buka halaman flash sale 5 menit HP sudah panas dan baterai turun cepat, padahal saya
 > cuma melihat-lihat, belum pencet apa-apa.
 
 **TK-1078, Kak Rara**
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 > Mau pencet barang yang paling atas, eh halamannya loncat turun sendiri, yang kepencet malah
 > iklan promo. Ini sengaja ya biar iklannya diklik?
 
 **TK-1081, Pak Hendra**
+<<<<<<< HEAD
+=======
+
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 > Gambar barangnya lama sekali munculnya, kotak abu-abu semua, apalagi kalau saya scroll cepat ke
 > bawah. Kuota saya juga cepat habis padahal cuma buka satu halaman. Internet saya lancar buat
 > YouTube, jadi pasti servernya yang lemot.
@@ -149,6 +190,7 @@ panel Performance** (flame chart main thread, ringkasan bottom-up, track Interac
 
 ### Skenario uji baku
 
+<<<<<<< HEAD
 | Kode | Langkah | Terkait tiket |
 |---|---|---|
 | S0 | Muat halaman, diam 10 detik. Amati juga panel Network: jumlah permintaan gambar dan kapan gambar terakhir selesai | TK-1078, TK-1081 |
@@ -171,6 +213,30 @@ panel Performance** (flame chart main thread, ringkasan bottom-up, track Interac
 | S5 dan S6: frame > 50 ms | paling banyak 2 per 10 detik |
 | S6: aktivitas main thread saat diam | mendekati nol; animasi yang tersisa berjalan di compositor |
 | S0: permintaan gambar | sebanding dengan kartu yang terlihat di layar, bukan ribuan |
+=======
+| Kode | Langkah                                                                                                                  | Terkait tiket    |
+| ---- | ------------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| S0   | Muat halaman, diam 10 detik. Amati juga panel Network: jumlah permintaan gambar dan kapan gambar terakhir selesai        | TK-1078, TK-1081 |
+| S1   | Ketik `sepatu` huruf demi huruf, lalu hapus semuanya                                                                   | TK-1041          |
+| S2   | Tekan "+ Keranjang" pada satu produk, satu kali                                                                          | TK-1044          |
+| S3   | Tekan "Beli sekarang" tiga kali secepat mungkin pada satu produk, lalu periksa lencana "Pesanan" dan log terminal server | TK-1052          |
+| S4   | Tekan "Pakai voucher" dengan kode `KILAT1212`; selama perhitungan berjalan, coba ketik di kolom cari                   | TK-1057          |
+| S5   | Gulir daftar produk terus-menerus selama 10 detik                                                                        | TK-1063          |
+| S6   | Diam 10 detik tanpa menyentuh apa pun, setelah halaman selesai dimuat                                                    | TK-1070          |
+
+### Target setelah perbaikan (pada protokol di atas)
+
+| Metrik                                  | Target                                                            |
+| --------------------------------------- | ----------------------------------------------------------------- |
+| INP pada S1, S2, S3, S4                 | <= 200 ms                                                         |
+| Long task selama interaksi (S1-S5)      | tidak ada yang > 100 ms                                           |
+| S3: jumlah pesanan dari tiga klik cepat | tepat 1, dan pengguna tahu pesanannya sedang diproses             |
+| S4: progres perhitungan                 | tergambar bertahap; kolom cari tetap responsif selama perhitungan |
+| CLS pada S0                             | <= 0,1                                                            |
+| S5 dan S6: frame > 50 ms                | paling banyak 2 per 10 detik                                      |
+| S6: aktivitas main thread saat diam     | mendekati nol; animasi yang tersisa berjalan di compositor        |
+| S0: permintaan gambar                   | sebanding dengan kartu yang terlihat di layar, bukan ribuan       |
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 
 Target adalah arah, bukan harga mati. Target yang meleset dengan analisis yang jujur dan tajam
 lebih berharga daripada target yang tercapai tanpa bisa dijelaskan.
@@ -190,6 +256,7 @@ tidak mengurangi nilai; prediksi yang ditulis setelah hasil diketahui, iya.
 usulan yang salah, tidak lengkap, menimbulkan regresi, atau memperbaiki sesuatu yang ternyata tidak
 berpengaruh. Buktikan dengan trace.
 
+<<<<<<< HEAD
 | Luaran | Keterangan |
 |---|---|
 | Repositori Git | Hasil perbaikan beserta riwayat commit |
@@ -209,6 +276,27 @@ berpengaruh. Buktikan dengan trace.
 | Log prediksi dan analisis trade-off | 10% | Ketajaman hipotesis, kejujuran membandingkan prediksi dengan hasil, alternatif yang dipertimbangkan beserta harganya |
 | Audit usulan AI | 10% | Kemampuan menemukan dan membuktikan kelemahan usulan AI |
 | Sesi debugging langsung dan tanya jawab | 40% | Individu. Lihat bagian 10 |
+=======
+| Luaran                  | Keterangan                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Repositori Git          | Hasil perbaikan beserta riwayat commit                                                                                          |
+| `laporan/PREDIKSI.md` | Log hipotesis, di-commit sebelum perbaikan terkait                                                                              |
+| `laporan/LAPORAN.md`  | Laporan audit sebelum dan sesudah, maksimal setara 6 halaman, mengikuti templat                                                 |
+| `laporan/AUDIT-AI.md` | Audit usulan AI, mengikuti templat                                                                                              |
+| Berkas trace            | Minimal 3 pasang sebelum dan sesudah (ekspor dari panel Performance), simpan di `laporan/trace/` atau tautan penyimpanan awan |
+| Video demo              | Maksimal 3 menit, direkam dengan CPU 4x slowdown, menunjukkan S1-S5 sebelum dan sesudah                                         |
+| Sesi langsung           | Lihat bagian 10                                                                                                                 |
+
+## 9. Penilaian
+
+| Komponen                                | Bobot | Yang dinilai                                                                                                                            |
+| --------------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Diagnosis dan bukti trace               | 20%   | Ketepatan akar masalah, pemetaan ke event loop atau tahap pipeline, kualitas anotasi, pembedaan antara penyebab nyata dan dugaan keliru |
+| Perbaikan dan capaian metrik            | 20%   | Ketepatan teknik, capaian target, tidak ada fitur hilang, tidak ada regresi                                                             |
+| Log prediksi dan analisis trade-off     | 10%   | Ketajaman hipotesis, kejujuran membandingkan prediksi dengan hasil, alternatif yang dipertimbangkan beserta harganya                    |
+| Audit usulan AI                         | 10%   | Kemampuan menemukan dan membuktikan kelemahan usulan AI                                                                                 |
+| Sesi debugging langsung dan tanya jawab | 40%   | Individu. Lihat bagian 10                                                                                                               |
+>>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 
 Kaitan dengan kualitas perangkat lunak harus muncul di laporan: untuk tiap masalah, sebutkan
 sub-karakteristik **performance efficiency** (time behaviour, resource utilization, capacity) dan
