@@ -881,3 +881,56 @@ men-debounce render pencarian (hasil tidak mengikuti ketikan), dan virtualisasi 
   pemuat gambar menambah kerja di setiap frame. Dugaan ini belum dibuktikan dengan A/B.
 
 ---
+
+## P-18: Animasi lencana kilat di dalam kartu `content-visibility: auto` memaksa frame main thread saat diam
+
+**Tiket terkait:** TK-1070 (utama), TK-1063
+**Tanggal dan hash commit entri ini:** 26-09-2026, hash dicatat di bagian "Sesudah"
+
+### Sebelum perbaikan
+
+- **Yang teramati:** commit P-17, S6 **tanpa** alat ukur (`ukur.mjs --tanpa-ukur`, laptop tersambung
+  listrik, 3 ulangan, `laporan/data/sesudah-tanpa-ukur`): main thread sibuk **33,6-36,2%**, dengan **±600 frame main
+  thread per 10 detik** (setiap vsync) walaupun tidak ada satu pun callback `requestAnimationFrame`. Isi tiap frame
+  adalah Recalculate Style, PrePaint, Commit, dan `IntersectionObserverController::computeIntersections`. Hasil
+  eksperimen A/B dengan CSS yang disuntikkan (`ukur.mjs --css`, S6 tanpa alat ukur, satu ulangan per varian,
+  `laporan/data/ab-S6-*`):
+  - tanpa perubahan: 37,5% (600 frame);
+  - teks berjalan tanpa animasi: 35,1%; gulungan perseratus detik disembunyikan: 29,9%. Keduanya bukan penyebab
+    utama;
+  - kedua animasi lencana kilat (`denyut`, `cincin`) dimatikan: **3,3%** (11 frame, yaitu hitung mundur sekali per
+    detik); hanya salah satunya dimatikan: 19,8% dan 21,9% (±300 frame);
+  - `content-visibility` kartu dimatikan, animasi tetap jalan: **3,9%** (11 frame);
+  - `content-visibility` dimatikan hanya untuk kartu yang memiliki lencana kilat: **3,0%**, dibanding 28,4% tanpa
+    perubahan pada kondisi yang sama (`ab-S6-kilat-tanpa-cv-baterai` vs `ab-S6-dasar-baterai`; pasangan ini diukur
+    saat laptop memakai baterai, jadi hanya perbandingan di antara keduanya yang bermakna).
+  Sebagai pembanding, kode awal pada S6 tanpa alat ukur sibuk 95,8%, dengan 0 `Timer Fired` dalam 10 detik.
+- **Dugaan mekanisme:** animasi `transform`/`opacity` biasanya berjalan di compositor tanpa frame main thread (P-07).
+  Tetapi lencana kilat berada di dalam `.kartu` yang sejak P-15 memakai `content-visibility: auto`, dan A/B
+  menunjukkan kombinasi ini membuat setiap tik animasi meminta frame main thread (setiap animasi ±30 per detik,
+  bersama 60 per detik). Dugaan kami: untuk elemen `content-visibility: auto`, browser memeriksa ulang relevansi
+  elemen di setiap frame yang disebabkan animasi di dalamnya (IntersectionObserver internal, terlihat sebagai
+  `computeIntersections` di setiap frame). Alasan persisnya belum bisa kami pastikan dari trace, karena event alasan
+  gagal-komposit tidak terekam. Yang terbukti hanya kombinasi pemicunya. Akibatnya halaman yang diam tetap
+  menggambar 60 frame per detik di main thread, dan TK-1070 belum tuntas walaupun P-07 sudah memindahkan animasi ke
+  `transform`/`opacity`.
+- **Rencana perubahan:** `buatKartu` memberi kelas `kartu-kilat` pada kartu produk flash sale (yang memiliki lencana,
+  ±8% produk), dan `content-visibility: auto` hanya dipasang pada `.kartu:not(.kartu-kilat)`. Animasi, lencana, dan
+  tampilan tidak berubah.
+- **Prediksi terukur:**
+  - S6 tanpa alat ukur: sibuk ±34% → **≤ 5%**, frame main thread ±600 → **±10-20 per 10 detik**.
+  - S6 dengan alat ukur: frame > 50 ms tetap 0. Sibuk tidak banyak berubah, karena loop rAF alat ukur tetap
+    memaksa frame di setiap vsync.
+  - S5: frame > 50 ms tetap di kisaran P-17 (±65 per 10 detik, ±10%). Kartu kilat yang tidak dilewati hanya ±1 dari
+    12 kartu per batch, jadi bisa sedikit naik.
+  - S1, S2, S4: tidak berubah berarti (rentang tumpang tindih dengan P-17).
+  - Efek samping yang mungkin memburuk: kartu kilat di luar layar kini ikut ditata dan dicat, sehingga kerja
+    Layout/Paint saat batch baru ditambahkan sedikit naik.
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:**
+  - Menghapus `content-visibility` seluruhnya: saat diam sama baiknya (3,9%), tetapi kehilangan manfaat P-15 (INP S1
+    dan Recalculate Style) untuk 92% kartu lain.
+  - Menghentikan animasi lencana setelah beberapa kali ulang, atau hanya menjalankannya saat terlihat: mengubah
+    perilaku fitur "penanda flash sale beranimasi" (aturan main: fitur tidak boleh dihapus). Selain itu, kartu yang
+    terlihat tetap berada di dalam subtree `content-visibility`.
+  - Selektor `:has(.lencana-kilat)` tanpa kelas: efeknya sama, tetapi kelas eksplisit lebih jelas dan tidak membuat
+    browser mencocokkan `:has()` di setiap perubahan DOM kisi.
