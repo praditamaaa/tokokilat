@@ -2,7 +2,12 @@
 
 Tim: Neliti Pemdat!
 
-Anggota: Amalia (003), Diaz(008), Nabil(018), Praditama(023), dan Zaidan Arkan(030)   
+Anggota: 
+- Amalia Khoerina (241524003)
+- Diaz Putri Izzatunisa (241524008)
+- Muhammad Nabil Syauqi Rasyiq (241524018)
+- Praditama Ajmal Hasan (241524023)
+- Zaidan Arkaan Azharuddya Asshauqi (241524030)   
 
 Tanggal: 25 September 2026
 Panjang maksimal setara 6 halaman (tidak termasuk lampiran gambar).
@@ -229,17 +234,55 @@ Berikut Temuan yang kami Temukan:
 
 ## 5. Dugaan yang ternyata keliru
 
-Dugaan dari catatan serah terima, dari tiket, atau dari tim Anda sendiri yang terbantah oleh
-pengukuran. Sertakan angkanya. Bagian ini sama pentingnya dengan bagian temuan.
+| Dugaan | Sumber | Pengukuran | Kesimpulan |
+|---|---|---|---|
+| Loop bersarang `kategori.js` O(n²) adalah biang kerok | Rudi #1 | 8 kategori → 56 iterasi, **0,2 ms**. Yang terlihat mahal di `pasangKaki` adalah inisialisasi ICU `toLocaleString('id-ID')` pertama (121 ms, sekali) | **Keliru** |
+| "API lambat, tambah server" | Rudi #2 | `/api/produk` 261 ms, sekali. `/api/promo` 1,8 detik tetapi asinkron (masalahnya ruang yang tidak dipesan, T-09) | **Keliru** |
+| Bubble sort harus diganti quicksort | Rudi #3 | yang diurutkan hanya 12 merek: **0,0-0,1 ms** | **Keliru**, tidak berpengaruh |
+| "Voucher sudah async, jadi aman" | Rudi #4 | satu task 20 detik dengan 0 frame (T-02) | **Keliru.** `await` hanya menjadwalkan microtask |
+| SDK vendor berat | Rudi #5 | 28 ms per panggilan, 332 ms dengan payload 1,2 MB | **Benar sebagian.** Yang bisa diubah adalah kapan dan apa yang dikirim (T-03) |
+| "Servernya yang lemot" | TK-1081 | latensi per gambar 60-300 ms; yang lambat adalah antrean 3000 permintaan dari klien | **Keliru** |
+| "Sengaja biar iklannya diklik" | TK-1078 | pergeseran berasal dari banner yang disisipkan tanpa ruang | Bukan disengaja, tetapi efeknya nyata |
+| Halaman 12 kartu → INP S1 ≤ 250 ms (P-14); `content-visibility` → frame lambat S5 −30-40% (P-15) | kami | INP S1 488 → 496 ms; S5 62,7 → 69 (jendela pagi) | **Meleset.** Biaya dominan adalah membangun ulang kartu yang sama (turun di P-16) |
+| Transisi kartu muncul membebani guliran | kami | A/B: tanpa transisi, S5 tetap ±62 frame lambat | **Keliru** |
+| Setelah P-07 halaman diam hampir nol; sisa ±47% di S6 hanya ulah alat ukur | kami (eksplorasi: ±4%) | tanpa alat ukur, P-17 masih 34% (±600 frame per 10 detik) | **Keliru sebagian.** Alat ukur menutupi masalah dari P-15 (diperbaiki P-18) |
+| P-18 menurunkan INP S2/S4 ke bawah 200 ms | kami (kesimpulan awal) | diukur ulang di jendela yang sama: S2 80 vs 80 ms, S4 80 vs 72 ms | **Keliru.** Semu, karena kami membandingkan pengukuran pagi dengan malam |
 
 ## 6. Yang belum beres dan rekomendasi
 
-Masalah yang tersisa, risiko, dan usulan untuk tim lain (backend, vendor SDK, desain).
+- **S5 belum mencapai target** (±6 frame > 50 ms per 10 detik; 72-91 saat laptop terbebani). Dalam kondisi baik
+  yang sama, P-16 mendapat 1, P-17 mendapat 3, dan P-18 mendapat 6. P-17 menukar sedikit kelancaran gulir dengan INP
+  ketik (120 → 72 ms), dan P-18 dengan prosesor saat diam (34% → 3%). Rekomendasi: **CDN mengirim gambar raster kecil
+  (WebP/AVIF ±200 px)**, karena SVG di-parse di main thread sedangkan raster di-decode di thread lain. Selain itu:
+  DOM kartu yang lebih sederhana, dan menjeda animasi lencana pada kartu yang jauh dari layar supaya kartu itu bisa
+  kembali memakai `content-visibility` (belum diuji).
+- **Event sentuh sintetis tidak sampai ke kode awal**, sedangkan klik mouse sampai. Dugaan kami: listener
+  `touchstart` non-pasif pada main thread yang jenuh. Belum dibuktikan di perangkat sungguhan.
+- **Backend:** kunci idempotensi pada `POST /api/pesanan` (penjaga klien tidak melindungi dua tab), dan
+  `Cache-Control` untuk gambar (saat ini `no-store`).
+- **Vendor SDK:** simpan sidik jari perangkat (sekarang dihitung ulang 2 juta iterasi di setiap event) dan sediakan
+  API asinkron/batch.
+- **Tim data:** sepakati payload analitik yang baru. Pertimbangkan IndexedDB untuk riwayat, yang sekarang masih
+  ditulis ulang utuh (1,2 MB) ke `localStorage` saat senggang.
+- **Tim desain:** keping kategori satu baris dan elipsis judul perlu disetujui, dan `min-height` banner harus
+  disesuaikan bila teks promo berubah.
 
 ## 7. Pernyataan penggunaan AI dan pembagian kerja
 
-Masalah yang tersisa, risiko, dan usulan untuk tim lain (backend, vendor SDK, desain).
-
-## 7. Pernyataan penggunaan AI dan pembagian kerja
-
-Alat AI yang dipakai dan untuk apa. Kontribusi tiap anggota.
+- **Alat AI:** Claude Code dipakai sebagai asisten utama. Atas permintaan tim, AI
+  menulis harness pengukuran otomatis (`laporan/skrip/`), menjalankan dan menganalisis pengukuran, mendiagnosis dari
+  trace, menulis seluruh perbaikan kode dan uji fungsional, serta menyusun draf `PREDIKSI.md`, `LAPORAN.md`,
+  `AUDIT-AI.md`, dan `CATATAN-BELAJAR.md`. Untuk audit, usulan perbaikan dibuat oleh AI lain yang terpisah (Claude
+  Sonnet, tanpa akses ke trace), lihat `AUDIT-AI.md`.
+- **Yang harus dilakukan tim sebelum menyerahkan:** memverifikasi angka dengan merekam ulang skenario secara manual
+  di DevTools dan mengambil tangkapan layar panel Performance; **merekam video demo** (S1-S5 sebelum/sesudah, CPU
+  4x; sebelum = `git checkout 3dfa4fb`); mengisi nama tim dan pembagian kerja; dan memastikan setiap anggota bisa
+  menjelaskan setiap perbaikan (`CATATAN-BELAJAR.md`).
+- **Pembagian kerja:**
+| Anggota | Fokus (tiket) | Temuan & perbaikan yang dikuasai | Skenario yang direkam ulang | Berkas kode | Tugas tambahan |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| Amalia Khoerina | Pencarian & render kisi (TK-1041) | T-01 (P-02, P-03, P-04, P-16), T-10 (P-05, P-14) | S1 | `katalog.js`, `pencarian.js`, `util.js` | Membuktikan ulang dugaan Rudi #1 (`kategori.js`) dan #3 (bubble sort) yang keliru |
+| Diaz Putri Izzatunisa | Voucher (TK-1057) | T-02 (P-11, P-12) | S4 | `harga-promo.js` | Pemilik `AUDIT-AI.md`: cek ulang A-01 sampai A-03 dan tulis refleksi dengan kata-kata tim sendiri |
+| Muhammad Nabil Syauqi Rasyiq | Keranjang, Beli sekarang, analitik (TK-1044, TK-1052) | T-03 (P-08), T-05 (P-09), T-06 (P-10) | S2, S3 (cek lencana Pesanan dan log terminal server) | `keranjang.js`, `analitik.js` | Membuktikan dugaan Rudi #5 (SDK) dan memeriksa ketujuh event analitik masih terkirim |
+| Praditama Ajmal Hasan | Gulir & gambar (TK-1063, TK-1081) | T-04 (P-01, P-17), T-07 (P-06, P-15) | S0 (panel Network), S5 | `gulir.js`, `gambar.js`, `toko.css` | Pemilik bagian 6 laporan: menjelaskan kenapa target S5 belum tercapai, ditambah dugaan Rudi #2 dan klaim "server lemot" |
+| Zaidan Arkaan Azharuddya Asshauqi | Halaman diam & layout shift (TK-1070, TK-1078) + koordinator | T-08 (P-07, P-18), T-09 (P-13) | S6, S0 (CLS) | `promo.js`, `index.html`, `toko.css` | Menyunting video demo, mengisi identitas tim dan bagian 2 & 7 laporan, memeriksa urutan commit PREDIKSI sebelum commit perbaikan |
