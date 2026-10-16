@@ -4,6 +4,27 @@ Aturan: satu entri per masalah. Bagian **Sebelum perbaikan** harus di-commit *se
 perbaikannya. Bagian **Sesudah perbaikan** diisi setelah pengukuran ulang. Jangan menyunting
 bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di bagian "sesudah".
 
+<<<<<<< HEAD
+=======
+---
+
+## P-01: [judul singkat masalah]
+
+**Tiket terkait:** TK-....
+**Tanggal dan hash commit entri ini:** ....
+
+### Sebelum perbaikan
+
+- **Yang teramati di trace (baseline):** durasi, di track apa, fungsi apa yang dominan di bottom-up.
+- **Dugaan mekanisme:** jelaskan memakai istilah event loop (task, microtask, rendering opportunity)
+  atau tahap pipeline (JS, Style, Layout, Paint, Composite).
+- **Rencana perubahan:** ....
+- **Prediksi terukur:** "Setelah perubahan, [metrik] turun dari ... menjadi sekitar ..., karena ...".
+  Sertakan juga prediksi efek samping: apa yang mungkin menjadi *lebih buruk*?
+- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:** ....
+  ==============================================================
+
+>>>>>>> 3fa779d92da302918f42b24d05e89bbff609c5d8
 ## P-01: 3000 gambar diminta sekaligus dan tanpa ukuran
 
 **Tiket terkait:** TK-1081 (utama), TK-1078, TK-1070
@@ -52,7 +73,8 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 ## P-02: Kisi Membangun seluruh 3000 kartu dalam satu task
 
 **Tiket terkait:** TK-1041 (utama), TK-1063, TK-1070, TK-1081
-**Tanggal dan hash commit entri ini:** 02-10-2026
+**Tanggal dan hash commit entri ini:**
+02-10-2026 8d9738a
 
 ### Sebelum perbaikan
 
@@ -105,7 +127,9 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 2. Memoisasi string per nilai harga (Map) dapat menambah memori string dan kompleksitas, sedangkan 'format()' pada performat tersimpan sudah -+ 5 microsecond.
 
 ### Sesudah perbaikan
+
 me
+
 - **Hash commit perbaikan:** 16b93c7dbb9acdd83821cb4b80b39039fd22e8a4
 - **Hasil ukur (median 3 kali):** dibanding P-02. Long task saat memuat 1.535 -> 1.161 ms
   (ulangan 945-1.358).INP S1 1.464 -> 2.056 ms (ulangan 1.168-2.544; P-02:
@@ -281,8 +305,8 @@ me
      properti ini tidak bisa dijalankan compositor, jadi main thread harus menghitung style, layout, dan paint di
      setiap frame selama ada satu saja produk kilat di DOM.
   4. Efek kartu muncul menganimasikan `margin-top` (Layout) selama 350 ms untuk setiap kartu yang masuk layar.
-  Akibatnya main thread tidak pernah sempat diam dan idle, sehingga CPU tidak pernah turun ke keadaan hemat (HP
-  panas, baterai turun: TK-1070), dan setiap frame yang sudah berat bersaing dengan input dan guliran (TK-1063).
+     Akibatnya main thread tidak pernah sempat diam dan idle, sehingga CPU tidak pernah turun ke keadaan hemat (HP
+     panas, baterai turun: TK-1070), dan setiap frame yang sudah berat bersaing dengan input dan guliran (TK-1063).
 - **Rencana perubahan:**
   - Hitung mundur: jam, menit, detik, dan garis diperbarui **sekali per detik** tepat saat detik berganti
     (`setTimeout` berantai). Garis memakai `transform: scaleX()` (tanpa Layout). Angka perseratus detik tetap ada
@@ -330,11 +354,11 @@ me
 
 ---
 
-
 ## P-08: SDK analitik dipanggil di tengah interaksi, dengan payload riwayat 1,2 MB
 
 **Tiket terkait:** TK-1044, TK-1052, TK-1041, TK-1063
-**Tanggal dan hash commit entri ini:** 02-10-2026
+**Tanggal dan hash commit entri ini:**
+02-10-2026 9845f6d
 
 ### Sebelum perbaikan
 
@@ -357,8 +381,7 @@ me
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:**
-- `3fc67ef`
+- **Hash commit perbaikan:** 450c3c2
 - **Hasil ukur (median 3 kali):**
 - dibanding dengan P-07; keduanya diukur malam 26-09. INP S2 424 -> 128 ms (304-424 -> 128-136), ketukan -> tombol berubah 385 menjadi 133 ms, dengan long task S2 dari 396 menjadi 115 ms. INP S3 384 -> 64 ms. INP S1 192 -> 160 ms. S5: frame > 50 ms 10,9 -> 4,0 per 10 detik (4-5), frame main thread 44 -> 48 per detik.
 - **Prediksi vs kenyataan:**
@@ -483,7 +506,7 @@ me
 ## P-11: Perhitungan Voucher "async" tetap satu task panjang tanpa kesempatan menggambar
 
 **Tiket terkait:** TK-1057 (utama), TK-1041 (mengetik saat voucher dihitung)
-**Tanggal dan hash commit entri ini: 02-10-2026**
+**Tanggal dan hash commit entri ini: 02-10-2026** b3358b2
 
 ### Sebelum perbaikan
 
@@ -512,8 +535,7 @@ me
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:**
-  `4368bf1` (entri prediksi ini di-commit lebih dulu: `3bf3424`)
+- **Hash commit perbaikan:** b3358b
 - **Hasil ukur (median 3 kali):**
 - dibanding P-10. S4: INP 4.272 → **232 ms** (ulangan 208-240). Long task 3.970 →
   133 ms. Langkah progres tergambar 0 → **44** (37-53), frame selama progres 0 → 48. Ketikan "tas" tetap masuk.
@@ -534,7 +556,7 @@ me
 ## P-12: 40 kali simulasi cicilan per produk yang hasilnya dibuang
 
 **Tiket terkait:** TK-1057
-**Tanggal dan hash commit entri ini:** 16-10-2026
+**Tanggal dan hash commit entri ini:** 16-10-2026 05582ed
 
 ### Sebelum perbaikan
 
@@ -567,8 +589,7 @@ me
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:**
-  `a0b788b` (entri prediksi ini di-commit lebih dulu: `c736740`)
+- **Hash commit perbaikan:** 8b17d4d
 - **Hasil ukur (median 3 kali):**
   dibanding P-11. S4: ketuk voucher sampai selesai 6.560 → **1.202 ms** (ulangan
   1.201-1.209). Langkah progres tergambar 44 → 4 (2-5). INP S4 232 → 288 ms (136-328), long task 133 → 163 ms.
@@ -601,9 +622,9 @@ me
   2. keping kategori baru dibuat setelah data produk tiba dan membungkus 3 baris di 412 px, sehingga toolbar
      bertambah ±127 px;
   3. kisi kosong sampai render selesai, sehingga kaki halaman sempat tergambar di tengah layar lalu terdorong.
-  Pergeseran yang tidak didahului input dalam 500 ms dihitung ke CLS. Karena kartu produk bergeser tepat saat
-  pengguna hendak mengetuk, ketukan jatuh ke banner (TK-1078: "yang kepencet malah iklan promo").
-  Pergeseran dari gambar tanpa ukuran dan animasi `margin-top` sudah ditangani P-01 dan P-07.
+     Pergeseran yang tidak didahului input dalam 500 ms dihitung ke CLS. Karena kartu produk bergeser tepat saat
+     pengguna hendak mengetuk, ketukan jatuh ke banner (TK-1078: "yang kepencet malah iklan promo").
+     Pergeseran dari gambar tanpa ukuran dan animasi `margin-top` sudah ditangani P-01 dan P-07.
 - **Rencana perubahan:**
   - Banner: elemen `#promo-banner` sudah ada di HTML sejak awal dengan `min-height` per breakpoint sesuai tinggi
     sebenarnya (248/202/177/132 px). `promo.js` mengisi elemen itu, tidak lagi menyisipkan elemen baru.
@@ -885,7 +906,7 @@ men-debounce render pencarian (hasil tidak mengikuti ketikan), dan virtualisasi 
   - `content-visibility` dimatikan hanya untuk kartu yang memiliki lencana kilat: **3,0%**, dibanding 28,4% tanpa
     perubahan pada kondisi yang sama (`ab-S6-kilat-tanpa-cv-baterai` vs `ab-S6-dasar-baterai`; pasangan ini diukur
     saat laptop memakai baterai, jadi hanya perbandingan di antara keduanya yang bermakna).
-  Sebagai pembanding, kode awal pada S6 tanpa alat ukur sibuk 95,8%, dengan 0 `Timer Fired` dalam 10 detik.
+    Sebagai pembanding, kode awal pada S6 tanpa alat ukur sibuk 95,8%, dengan 0 `Timer Fired` dalam 10 detik.
 - **Dugaan mekanisme:** animasi `transform`/`opacity` biasanya berjalan di compositor tanpa frame main thread (P-07).
   Tetapi lencana kilat berada di dalam `.kartu` yang sejak P-15 memakai `content-visibility: auto`, dan A/B
   menunjukkan kombinasi ini membuat setiap tik animasi meminta frame main thread (setiap animasi ±30 per detik,
@@ -915,7 +936,6 @@ men-debounce render pencarian (hasil tidak mengikuti ketikan), dan virtualisasi 
     terlihat tetap berada di dalam subtree `content-visibility`.
   - Selektor `:has(.lencana-kilat)` tanpa kelas: efeknya sama, tetapi kelas eksplisit lebih jelas dan tidak membuat
     browser mencocokkan `:has()` di setiap perubahan DOM kisi.
-  
 
 ### Sesudah perbaikan
 
