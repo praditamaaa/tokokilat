@@ -578,7 +578,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** 
+- **Hash commit perbaikan:** 7c54eda
 - **Hasil ukur (median 3 kali):** dibanding P-12. CLS S0 0,137 → **0** (ketiga ulangan; sejak P-13 semua ulangan
   semua versi berikutnya 0). Long task saat memuat 417 → 747 ms (657-949). Tidak direncanakan: INP S1 360 → 488 ms
   (448-552; P-12: 224-424) dan S6 sibuk 57% → 70%.
