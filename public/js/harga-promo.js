@@ -1,14 +1,9 @@
 // Voucher: menghitung harga promo untuk setiap produk.
 // Aturan promo bertingkat + simulasi cicilan ditentukan tim bisnis.
 
-<<<<<<< HEAD
-import { $, hargaSetelahDiskon, tampilkanToast } from './util.js';
-import { keadaan, perbaruiHargaVoucherDiKartu } from './katalog.js';
-=======
 import { $, formatAngka, hargaSetelahDiskon, tampilkanToast } from './util.js';
 import { keadaan, perbaruiHargaVoucherDiKartu } from './katalog.js';
 import * as analitik from './analitik.js';
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 
 const VOUCHER = {
   KILAT1212: { persen: 12, maksPotongan: 120000, minBelanja: 50000 },
@@ -33,17 +28,36 @@ function simulasiCicilan(harga) {
   return terbaik;
 }
 
-// Dibuat async supaya perhitungan tidak memblokir halaman.
-async function hitungHargaPromo(produk, aturan) {
+// Fungsi biasa (sinkron). Menandainya async tidak membuat perhitungan berhenti memblokir halaman:
+// await pada promise yang sudah selesai hanya menjadwalkan microtask, dan semua microtask dikuras
+// dalam task yang sama sebelum browser sempat menggambar atau menangani input.
+function hitungHargaPromo(produk, aturan) {
   const dasar = hargaSetelahDiskon(produk);
   if (dasar < aturan.minBelanja) return null;
   let potongan = Math.min(Math.round((dasar * aturan.persen) / 100), aturan.maksPotongan);
   if (produk.flashSale) potongan = Math.round(potongan / 2); // flash sale hanya dapat setengah
-  let hargaAkhir = Math.max(dasar - potongan, 100);
-  for (let i = 0; i < 40; i++) simulasiCicilan(hargaAkhir + i); // cek kestabilan pembulatan
+  const hargaAkhir = Math.max(dasar - potongan, 100);
+  // Dulu di sini ada 40 panggilan simulasiCicilan(hargaAkhir + i) sebagai "cek kestabilan pembulatan".
+  // simulasiCicilan adalah fungsi murni dan hasil ke-40 panggilan itu tidak pernah dipakai, jadi
+  // dihapus: 97% kerja CPU voucher hilang tanpa mengubah hasil.
   const cicilan = simulasiCicilan(hargaAkhir);
   return { hargaAkhir, cicilan };
 }
+
+// Menyerahkan giliran ke event loop dengan task baru, supaya input dan rendering yang tertunda sempat
+// berjalan. scheduler.yield() mendahulukan lanjutan ini dibanding task lain; MessageChannel sebagai cadangan
+// (tanpa jeda minimum 4 ms seperti setTimeout bersarang).
+function beriGiliran() {
+  if (globalThis.scheduler && typeof globalThis.scheduler.yield === 'function') return globalThis.scheduler.yield();
+  return new Promise((selesai) => {
+    const kanal = new MessageChannel();
+    kanal.port1.onmessage = () => selesai();
+    kanal.port2.postMessage(null);
+  });
+}
+
+const JATAH_IRISAN_MS = 8; // lama satu irisan kerja sebelum giliran diserahkan (setengah frame 60 Hz)
+let generasi = 0; // penerapan voucher baru membatalkan perhitungan yang masih berjalan
 
 async function terapkanVoucher(kode) {
   const aturan = VOUCHER[kode];
@@ -52,35 +66,51 @@ async function terapkanVoucher(kode) {
     return;
   }
 
+  const saya = ++generasi;
+  const tombol = $('#tombol-voucher');
   const progres = $('#progres');
   const isi = $('#progres-isi');
   const teks = $('#progres-teks');
-  progres.hidden = false;
-  isi.style.width = '0%';
-
-  const total = keadaan.semuaProduk.length;
-  let selesai = 0;
-  keadaan.hargaVoucher.clear();
-
-  for (const produk of keadaan.semuaProduk) {
-    // await di setiap produk supaya browser sempat menggambar progress bar
-    const hasil = await hitungHargaPromo(produk, aturan);
-    if (hasil) keadaan.hargaVoucher.set(produk.id, hasil.hargaAkhir);
-    selesai++;
+  const produk = keadaan.semuaProduk;
+  const total = produk.length;
+  const tampilkanProgres = (selesai) => {
     const persen = Math.round((selesai / total) * 100);
     isi.style.width = persen + '%';
     teks.textContent = 'Menghitung harga promo… ' + persen + '% (' + selesai + ' dari ' + total + ' produk)';
-  }
+  };
+  tombol.setAttribute('aria-busy', 'true');
+  progres.hidden = false;
+  tampilkanProgres(0);
 
+  // Hasil ditampung di Map baru dan ditukar sekaligus di akhir: kartu yang dirender selama perhitungan
+  // (misalnya karena pengguna mengetik) tidak menampilkan harga voucher setengah jadi.
+  const hargaBaru = new Map();
+  const cicilanBaru = new Map();
+  let i = 0;
+  await beriGiliran(); // biarkan progres 0% tergambar dulu
+  while (i < total) {
+    if (saya !== generasi) return;
+    const batas = performance.now() + JATAH_IRISAN_MS;
+    do {
+      const hasil = hitungHargaPromo(produk[i], aturan);
+      if (hasil) {
+        hargaBaru.set(produk[i].id, hasil.hargaAkhir);
+        cicilanBaru.set(produk[i].id, hasil.cicilan);
+      }
+      i++;
+    } while (i < total && performance.now() < batas);
+    tampilkanProgres(i);
+    await beriGiliran();
+  }
+  if (saya !== generasi) return;
+
+  keadaan.hargaVoucher = hargaBaru;
+  keadaan.cicilanVoucher = cicilanBaru;
   perbaruiHargaVoucherDiKartu();
   progres.hidden = true;
-<<<<<<< HEAD
-  tampilkanToast('Voucher ' + kode + ' dipakai di ' + keadaan.hargaVoucher.size.toLocaleString('id-ID') + ' produk.');
-  if (window.Lacak) window.Lacak.kirim('apply_voucher', { kode, jumlah: keadaan.hargaVoucher.size });
-=======
+  tombol.removeAttribute('aria-busy');
   tampilkanToast('Voucher ' + kode + ' dipakai di ' + formatAngka(keadaan.hargaVoucher.size) + ' produk.');
   analitik.kirim('apply_voucher', { kode, jumlah: keadaan.hargaVoucher.size });
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 }
 
 export function pasangVoucher() {
