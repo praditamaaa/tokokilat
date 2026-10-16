@@ -1,0 +1,18 @@
+{
+  "name": "tokokilat",
+  "version": "1.12.0",
+  "private": true,
+  "description": "Storefront TokoKilat - kampanye Flash Sale 12.12",
+  "type": "commonjs",
+  "scripts": {
+  "start": "node server.js",
+  "start:ringan": "cross-env JUMLAH_PRODUK=1500 node server.js",
+  "start:berat": "cross-env JUMLAH_PRODUK=5000 node server.js"
+},
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0"
+  }
+}
