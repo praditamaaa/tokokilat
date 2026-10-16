@@ -576,7 +576,21 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
   - Membuat keping kategori dari daftar kategori statis di HTML: tidak perlu menunggu data, tetapi kategori
     menjadi ganda sumber (HTML dan data) dan bisa tidak sinkron.
 
+### Sesudah perbaikan
 
+- **Hash commit perbaikan:** 
+- **Hasil ukur (median 3 kali):** dibanding P-12. CLS S0 0,137 → **0** (ketiga ulangan; sejak P-13 semua ulangan
+  semua versi berikutnya 0). Long task saat memuat 417 → 747 ms (657-949). Tidak direncanakan: INP S1 360 → 488 ms
+  (448-552; P-12: 224-424) dan S6 sibuk 57% → 70%.
+- **Prediksi vs kenyataan:** CLS ≤ 0,02: **sesuai** (0). Kenaikan long task memuat, INP S1, dan sibuk S6 **tidak
+  kami prediksi**. Rentang S1 tidak tumpang tindih, jadi kemungkinan nyata. Trace per ulangan versi antara tidak
+  disimpan, sehingga penyebabnya belum dipastikan. Dugaan kami: baris keping kategori yang kini menjadi wadah gulir
+  horizontal dan banner yang ada sejak awal menambah kerja Style/Layout di setiap frame. Kenaikan ini tertutup oleh
+  P-15 dan P-16 (INP S1 akhir 152 ms).
+- **Efek samping yang muncul:** Kotak banner kosong ±1,8 detik dan keping kategori yang harus digeser sesuai
+  prediksi. Biaya kerja per frame naik (lihat di atas).
+
+---
 
 ## P-14: Setiap huruf membangun kartu baru dan memuat gambar SVG-nya
 
