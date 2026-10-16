@@ -934,3 +934,27 @@ men-debounce render pencarian (hasil tidak mengikuti ketikan), dan virtualisasi 
     terlihat tetap berada di dalam subtree `content-visibility`.
   - Selektor `:has(.lencana-kilat)` tanpa kelas: efeknya sama, tetapi kelas eksplisit lebih jelas dan tidak membuat
     browser mencocokkan `:has()` di setiap perubahan DOM kisi.
+  
+
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:** e9ca521
+- **Hasil ukur (median 3 kali):** dibanding P-17. Keduanya diukur ulang pada malam 26-09 (20.20-20.32) di jendela
+  yang sama (`data/P-17`, `data/sesudah`). S6 **tanpa** alat ukur: 34,1% (P-17, pagi) → **2,9%** (2,8-3,7%), dan
+  frame main thread ±599 → **11** per 10 detik. Di dalam satu jendela, A/B CSS memberi 37,5% → 3,9% dan 28,4% → 3,0%
+  (bagian Sebelum). S6 dengan alat ukur: sibuk 29,2% → 39,1%, frame > 50 ms tetap 0. S5: frame > 50 ms 3 → 6 per 10
+  detik (ulangan 2-5 → 3-8), frame main thread 49 → 46 per detik, frame terburuk 72 → 61 ms. INP S1 72 → 96 ms, S2
+  80 → 80 ms, S3 32 → 32 ms, S4 80 → 72 ms.
+- **Prediksi vs kenyataan:** S6 tanpa alat ukur ≤ 5% dengan ±10-20 frame: **sesuai**. S6 dengan alat ukur "tidak
+  banyak berubah": **meleset sedikit**, naik 29% → 39%, karena kartu kilat di luar layar kini ikut ditata dan dicat
+  di setiap frame yang dipaksa alat ukur. S5 "tetap, bisa sedikit naik": **arah sesuai**, median 3 → 6 dengan
+  rentang yang tumpang tindih sebagian. S1, S2, S4 tidak berubah berarti: **sesuai**. Catatan: pengukuran pertama
+  P-18 (18.35, tepat setelah baterai mulai diisi, `data/sesudah-1835`) yang dibandingkan dengan P-17 pagi sempat
+  memberi kesan S2/S4 membaik ke bawah 200 ms dan S5 memburuk ±30%. Pengukuran ulang di jendela yang sama
+  menunjukkan keduanya efek kondisi mesin (LAPORAN bagian 5). Uji A/B S5 dengan dan tanpa animasi lencana
+  (`data/ab-S5-*`) juga tidak memberi sinyal yang jelas karena variasi antar-sesi.
+- **Efek samping yang muncul:** S5 dan S6 dengan alat ukur sedikit memburuk (lihat di atas). Fungsi tidak berubah:
+  uji fungsional 50/50 lulus. Uji voucher tanpa alat ukur (CPU 4x): selesai 212 ms setelah progres tampil, jumlah
+  pada toast benar (2.264), dan kartu konsisten. Alternatif yang mungkin menghilangkan harga ini: menjeda animasi
+  lencana pada kartu yang jauh dari layar, sehingga kartu itu bisa kembali memakai `content-visibility` (belum
+  diuji).
