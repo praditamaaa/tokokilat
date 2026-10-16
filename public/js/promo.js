@@ -1,10 +1,6 @@
 // Elemen kampanye: hitung mundur, teks berjalan, dan banner promo.
 
-import { $, el, tampilkanToast } from './util.js';
-<<<<<<< HEAD
-=======
 import * as analitik from './analitik.js';
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 
 // Flash sale berakhir tengah malam nanti (waktu perangkat).
 function akhirFlashSale() {
@@ -15,17 +11,6 @@ function akhirFlashSale() {
 
 const duaDigit = (n) => String(n).padStart(2, '0');
 
-<<<<<<< HEAD
-function pasangHitungMundur() {
-  const akhir = akhirFlashSale();
-  const awal = Date.now();
-  const wadah = $('#hitung-mundur');
-  const garis = $('#hm-garis');
-  const jam = $('#hm-jam'), menit = $('#hm-menit'), detik = $('#hm-detik'), senti = $('#hm-senti');
-
-  // 10 ms supaya angka perseratus detik terlihat mulus
-  setInterval(() => {
-=======
 const kurangiGerak = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function pasangHitungMundur() {
@@ -52,29 +37,10 @@ function pasangHitungMundur() {
   // Jam, menit, detik, dan garis cukup diperbarui sekali per detik, tepat saat detik berganti.
   // Garis memakai transform (tanpa layout) dan tidak lagi membaca offsetWidth.
   function detak() {
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
     const sisa = Math.max(akhir - Date.now(), 0);
     jam.textContent = duaDigit(Math.floor(sisa / 3600000));
     menit.textContent = duaDigit(Math.floor((sisa % 3600000) / 60000));
     detik.textContent = duaDigit(Math.floor((sisa % 60000) / 1000));
-<<<<<<< HEAD
-    senti.textContent = duaDigit(Math.floor((sisa % 1000) / 10));
-
-    // garis di bawah angka menyusut mengikuti sisa waktu
-    const lebarPenuh = wadah.offsetWidth;
-    garis.style.width = Math.round(lebarPenuh * (sisa / (akhir - awal + 1))) + 'px';
-  }, 10);
-}
-
-function pasangTeksBerjalan() {
-  const teks = $('#berjalan-teks');
-  let x = teks.parentElement.offsetWidth;
-  setInterval(() => {
-    x -= 1;
-    if (x < -teks.offsetWidth) x = teks.parentElement.offsetWidth;
-    teks.style.left = x + 'px';
-  }, 10);
-=======
     garis.style.transform = 'scaleX(' + (sisa / (akhir - awal + 1)).toFixed(5) + ')';
     if (sisa === 0) {
       if (gulungan) gulungan.cancel();
@@ -113,7 +79,6 @@ function pasangTeksBerjalan() {
     teks.style.setProperty('--durasi-berjalan', (lebarWadah + teks.offsetWidth) / 100 + 's');
     wadah.classList.add('siap');
   }).observe(wadah);
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
 }
 
 async function pasangBannerPromo() {
@@ -127,11 +92,7 @@ async function pasangBannerPromo() {
   tombol.type = 'button';
   tombol.addEventListener('click', () => {
     tampilkanToast('Syarat promo: berlaku 12 Desember, satu voucher per akun, tidak bisa digabung.');
-<<<<<<< HEAD
-    if (window.Lacak) window.Lacak.kirim('promo_click', { judul: promo.judul });
-=======
     analitik.kirim('promo_click', { judul: promo.judul });
->>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
   });
   banner.append(teks, tombol);
 

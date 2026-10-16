@@ -333,6 +333,24 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
   - `will-change` pada lencana tanpa mengganti properti yang dianimasikan: tidak membantu, karena `top` dan
     `box-shadow` tetap harus dihitung main thread.
 
+### Sesudah perbaikan
+
+- **Hash commit perbaikan:**
+- **Hasil ukur (median 3 kali):** dibanding P-06; keduanya diukur ulang malam 26-09 dalam kondisi yang sama (lihat
+  Catatan metode). S6 (dengan alat ukur): sibuk 91,9% → **39,4%** (29-40), layout paksa 738 → **0**, `Timer Fired`
+  1.331 → **20** per 10 detik, frame > 50 ms tetap 0. S5: frame > 50 ms 48,8 → **10,9** per 10 detik (42-56 → 2-11),
+  frame main thread 24 → 44 per detik, layout paksa 714 → 29, sibuk 92,8% → 68,7%. INP S1 424 → 192 ms (rentang
+  160-848 → 136-312).
+- **Prediksi vs kenyataan:** Timer ±100 → ±1 per detik: **sesuai** (20 per 10 detik termasuk timer lain). Layout
+  paksa S6 0: **sesuai**. Frame > 50 ms S6 ≤ 2: **sesuai** (0). S6 sibuk < 5%: **meleset** bila diukur dengan alat
+  ukur (39%), karena loop rAF alat ukur memaksa frame di setiap vsync. S5 turun lagi: **sesuai, dan jauh lebih
+  besar** daripada perkiraan (49 → 11). Setelah P-06, biaya terbesar setiap frame gulir ternyata Layout/Paint dari
+  animasi `top`/`box-shadow` lencana dan timer 10 ms, bukan panggilan SDK impresi seperti dugaan kami.
+- **Efek samping yang muncul:** Uji fungsional untuk hitung mundur (sisa waktu benar dan berjalan), angka perseratus
+  detik yang bergerak, teks berjalan, dan lencana beranimasi lulus. Layer komposit tambahan tidak diukur. CLS 0,137
+  di ketiga ulangan (banner, ditangani P-13).
+
+---
 
 
 ## P-08: SDK analitik dipanggil di tengah interaksi, dengan payload riwayat 1,2 MB
