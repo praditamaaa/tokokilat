@@ -7,6 +7,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 ---
 
 <<<<<<< HEAD
+
 ## P-01: [judul singkat masalah]
 
 **Tiket terkait:** TK-....
@@ -21,7 +22,8 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 - **Prediksi terukur:** "Setelah perubahan, [metrik] turun dari ... menjadi sekitar ..., karena ...".
   Sertakan juga prediksi efek samping: apa yang mungkin menjadi *lebih buruk*?
 - **Alternatif yang dipertimbangkan dan alasan tidak dipilih:** ....
-=======
+  =======
+
 ## P-01: 3000 gambar diminta sekaligus dan tanpa ukuran
 
 **Tiket terkait:** TK-1081 (utama), TK-1078, TK-1070
@@ -121,16 +123,23 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 1. Memformat angka secara manual dengan regex pemisah ribuan memang lebih cepat tetapi rawan salah locate dan karena mata uangnya. Keuntungannya kecil dibanding pemformat yang disimpan.
 2. Memoisasi string per nilai harga (Map) dapat menambah memori string dan kompleksitas, sedangkan 'format()' pada performat tersimpan sudah -+ 5 microsecond.
+
 >>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
+>>>>>>>
+>>>>>>
+>>>>>
+>>>>
+>>>
+>>
 
 ### Sesudah perbaikan
 
 - **Hash commit perbaikan:** ....
-<<<<<<< HEAD
+  <<<<<<< HEAD
 - **Hasil ukur (median 3 kali):** ....
 - **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
 - **Efek samping yang muncul:** ....
-=======
+  =======
 - **Hasil ukur (median 3 kali):** dibanding P-02. Long task saat memuat 1.535 -> 1.161 ms
   (ulangan 945-1.358).INP S1 1.464 -> 2.056 ms (ulangan 1.168-2.544; P-02:
   688-2.168). Long task S1 644 -> 870 ms. Micro-benchmark `formatRupiah` 3000x
@@ -349,10 +358,19 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:**
+- **Hash commit perbaikan:** ` bdc0029` (entri prediksi ini di-commit lebih dulu: `9776b07`)
 - **Hasil ukur (median 3 kali):**
+  dibanding P-03. INP S1 2.056 → **552 ms** (ulangan 528-960). Long task S1 870 →
+  321 ms. Layout paksa selama S1 497 → 177. Long task saat memuat 1.161 → 802 ms.
 - **Prediksi vs kenyataan:**
-- **Efek samping yang muncul:**
+  Layout paksa dari `katalog.js` → 0: **sesuai** (sisa 177 berasal dari `periksaGulir`
+  dan timer hitung mundur/teks berjalan, hilang di P-06/P-07). INP S1 diprediksi 1-2 detik, kenyataannya **lebih
+  baik** (552 ms). Kami meremehkan biaya tiap layout paksa: setiap layout menata ulang kisi dan seluruh halaman yang
+  juga sedang dianimasikan.
+- **Efek samping yang muncul: **
+  Elipsis pada ±1,7% judul sesuai prediksi (uji fungsional: nama lengkap tetap ada di
+  DOM). CLS 0,614-0,615 di dua dari tiga ulangan. Ini **bukan** akibat `line-clamp`: pergeseran yang sama muncul
+  acak di P-03 dan P-06, bergantung pada apakah frame pertama tergambar sebelum data produk tiba (P-13).
 
 ## P-12:
 
@@ -647,4 +665,11 @@ men-debounce render pencarian (hasil tidak mengikuti ketikan), dan virtualisasi 
   pemuat gambar menambah kerja di setiap frame. Dugaan ini belum dibuktikan dengan A/B.
 
 ---
+
 >>>>>>> 1b4c6725201f41bd1dc2bd171e060263d96f0663
+>>>>>>>
+>>>>>>
+>>>>>
+>>>>
+>>>
+>>
