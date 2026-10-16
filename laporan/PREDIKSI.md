@@ -417,7 +417,7 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:**
+- **Hash commit perbaikan:** c3aa8df
 - **Hasil ukur (median 3 kali):** dibanding P-09. S3: pesanan dari 3 ketukan cepat 3 → **1** (ketiga ulangan).
   Perubahan tampilan pertama 498 ms ("Dipesan ✓", setelah respons server) → **84 ms** ("Memproses…", ulangan
   80-104). INP S3 64 → 80 ms (ulangan 72-328).
