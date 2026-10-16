@@ -358,19 +358,24 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
 
 ### Sesudah perbaikan
 
-- **Hash commit perbaikan:** ` bdc0029` (entri prediksi ini di-commit lebih dulu: `9776b07`)
+- **Hash commit perbaikan:**
+  `4368bf1` (entri prediksi ini di-commit lebih dulu: `3bf3424`)
 - **Hasil ukur (median 3 kali):**
-  dibanding P-03. INP S1 2.056 → **552 ms** (ulangan 528-960). Long task S1 870 →
-  321 ms. Layout paksa selama S1 497 → 177. Long task saat memuat 1.161 → 802 ms.
+- dibanding P-10. S4: INP 4.272 → **232 ms** (ulangan 208-240). Long task 3.970 →
+  133 ms. Langkah progres tergambar 0 → **44** (37-53), frame selama progres 0 → 48. Ketikan "tas" tetap masuk.
+  Ketuk voucher sampai selesai 4,4 → 6,6 detik (5,4-7,7).
 - **Prediksi vs kenyataan:**
-  Layout paksa dari `katalog.js` → 0: **sesuai** (sisa 177 berasal dari `periksaGulir`
-  dan timer hitung mundur/teks berjalan, hilang di P-06/P-07). INP S1 diprediksi 1-2 detik, kenyataannya **lebih
-  baik** (552 ms). Kami meremehkan biaya tiap layout paksa: setiap layout menata ulang kisi dan seluruh halaman yang
-  juga sedang dianimasikan.
-- **Efek samping yang muncul: **
-  Elipsis pada ±1,7% judul sesuai prediksi (uji fungsional: nama lengkap tetap ada di
-  DOM). CLS 0,614-0,615 di dua dari tiga ulangan. Ini **bukan** akibat `line-clamp`: pergeseran yang sama muncul
-  acak di P-03 dan P-06, bergantung pada apakah frame pertama tergambar sebelum data produk tiba (P-13).
+  Progres bertahap ≥ 20 langkah **sesuai** (44). Waktu total naik **sesuai arah**
+  (prediksi ±7 → ±9-11 detik, dengan angka awal yang diukur saat baterai; di matriks akhir 4,4 → 6,6 detik). Long
+  task ≤ 60 ms **meleset** (133 ms): irisannya memang ±8 ms, tetapi task frame dan render pencarian 12 kartu di
+  tengah perhitungan lebih dari itu. Frame "ratusan" **meleset** (48 frame dalam 6,6 detik, ±7 per detik). Lanjutan
+  `scheduler.yield()` didahulukan di atas task lain, jadi frame hanya tergambar saat penjadwal memberi giliran
+  rendering. INP < 200 ms **nyaris** (232).
+- **Efek samping yang muncul:**
+  Tidak ada kesalahan harga (uji fungsional harga voucher di kartu dan setelah
+  pencarian lulus). Menerapkan voucher lagi di tengah perhitungan membatalkan perhitungan lama (nomor generasi). Ini
+  dijamin oleh rancangan, belum oleh uji otomatis: `uji-voucher-sela.mjs` tidak bisa menyela lewat DevTools karena
+  lanjutan `scheduler.yield()` didahulukan (AUDIT-AI A-02).
 
 ## P-12:
 
