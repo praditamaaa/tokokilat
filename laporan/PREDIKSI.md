@@ -162,26 +162,6 @@ bagian "sebelum" setelah hasilnya diketahui; bila prediksi meleset, jelaskan di 
   pergeseran yang sama muncul acak di P-03 dan P-06, bergantung pada apakah frame
   pertama tergambar sebelum data produk tiba (P-13).
 
-## P-05: Menormalkan pencarian produk
-
-**Tiket terkait:** TK-1041
-**Tanggal dan hash commit entri ini:** 2-10-2026
-
-### Sebelum perbaikan
-
-- **Yang teramati di trace (baseline):** setelah P-02 (trace 'diagnosis-S1-setelah-P-02.json.gz', pengukuran awal saat laptop masih memakai baterai), 'normalkan' di 'pencarian.js' memakan 389 ms self selama S1 (12 ketikan, -+32 ms perketikan). Micro-benchmark CPU 4x menyaring 3000 produk dengan kata "sepatu" = 26,5 ms bila teks dinormalkan ulang, 4,6 ms bila teks sudah dinormalkan sebelumnya (hasil sama: 106 produk).
-- **Dugaan mekanisme:** 'cocok()' membangun string gabungan nama+merek+kategori+kota lalu menjalankan 'toLowerCase', 'normalize(NFD)' , dan dua 'replace' regex untuk setiap produk di setiap huruf yang diketik.Teks produk tidak pernah berubah, jadi hasilnya selalu sama. Semua kerja ini JS sinkron di task 'input' sebelum render.
-- **Rencana perubahan:** simpan teks pencarian yang sudah dinormalkan per produk di 'Map' (dibuat saat pertama dibutuhkan). Kata kunci dipecah sekali per pencarian, tidak sekali per produk.
-- **Prediksi terukur:** biaya penyaringan per ketikan turun dari -+26-32 ms menjadi -+5 ms (CPU 4x). Ketikan pertama tetap membayar -+26 ms untuk mengisi cache. Dampak ke INP S1 kecil (untuk -+25 ms per ketikan). Ini bukan penyebab utamanya, Namun karena murah dan tidak berisiko. Efek samping: memori tambahan -+3000 string pendek (-+150 KB).
-- **Alternatif yang dipertimbangkan dan alasan tidak dipilih:** membangun indeks kata (inverted index) atau trie. Lebih cepat untuk data besar, tetapi 3000 produk × `includes` sudah < 5 ms, dan pencocokan substring (misal "sepa" cocok dengan "sepatu") jadi lebih rumit.
-
-### Sesudah perbaikan
-
-- **Hash commit perbaikan:** ....
-- **Hasil ukur (median 3 kali):** ....
-- **Prediksi vs kenyataan:** tepat, meleset, atau sebagian? Bila meleset, apa yang salah dari model mental Anda?
-- **Efek samping yang muncul:** ....
-
 ## P-05: Pencarian menormalkan ulang teks 3000 produk di setiap huruf
 
 **Tiket terkait:** TK-1041

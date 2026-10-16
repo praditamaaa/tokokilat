@@ -18,32 +18,32 @@ Apa masalah terbesar, apa yang dilakukan, berapa hasilnya. Tulis untuk manajer p
 
 ## 3. Hasil sebelum dan sesudah
 
-| Skenario | Metrik | Sebelum (median) | Sesudah (median) | Target | Tercapai? |
-|---|---|---|---|---|---|
-| S0 | CLS (sejak dokumen dibuat) | 0 (lihat T-09) |  | <= 0,1 |  |
-| S0 | Permintaan gambar dalam 10 dtk pertama / total | 0 / **3.000** (3.228 KB) |  | sebanding yang terlihat |  |
-| S0 | Gambar terakhir selesai | 146 dtk |  | |  |
-| S0 | Long task terlama saat memuat | **14.402 ms** |  | |  |
-| S1 | INP | **64.302 ms** |  | <= 200 ms |  |
-| S1 | Long task terlama | 41.983 ms |  | <= 100 ms |  |
-| S2 | INP | 2.532 ms |  | <= 200 ms |  |
-| S2 | Ketukan -> tombol berubah | 1.159 ms |  | |  |
-| S2 | Long task terlama | 1.534 ms |  | <= 100 ms |  |
-| S3 | Jumlah pesanan dari 3 ketukan | **3** |  | 1 |  |
-| S3 | Umpan balik pertama | tidak ada selama jendela ukur |  | pengguna tahu diproses |  |
-| S3 | INP | 2.634 ms |  | <= 200 ms |  |
-| S4 | INP | **51.233 ms** |  | <= 200 ms |  |
-| S4 | Langkah progres tergambar / frame selama progres | **0 / 0** |  | bertahap |  |
-| S4 | Long task terlama | 30.390 ms |  | <= 100 ms |  |
-| S4 | Ketuk voucher sampai selesai | 51.163 ms |  | |  |
-| S5 | Frame > 50 ms per 10 dtk | 0,9 *(lihat catatan)* |  | <= 2 |  |
-| S5 | Waktu menggulir 14.000 px (seharusnya ±10 dtk) | **32.433 ms** |  | |  |
-| S5 | Frame main thread per detik / frame terburuk | **0,1 fps / 21.012 ms** |  | |  |
-| S5 | Long task terlama | 587 ms |  | <= 100 ms |  |
-| S6 | Frame > 50 ms per 10 dtk | 20 |  | <= 2 |  |
-| S6 | Frame main thread per detik / frame terburuk | 2,1 fps / 592 ms |  | |  |
-| S6 | Main thread sibuk, **tanpa** alat ukur | 95,8% |  | mendekati nol |  |
-| S6 | Main thread sibuk, dengan alat ukur | 96,8% |  | | (sisa = loop rAF alat ukur, T-08) |
+| Skenario | Metrik                                           | Sebelum (median)               | Sesudah (median) | Target                  | Tercapai?                         |
+| -------- | ------------------------------------------------ | ------------------------------ | ---------------- | ----------------------- | --------------------------------- |
+| S0       | CLS (sejak dokumen dibuat)                       | 0 (lihat T-09)                 |                  | <= 0,1                  |                                   |
+| S0       | Permintaan gambar dalam 10 dtk pertama / total   | 0 / **3.000** (3.228 KB) |                  | sebanding yang terlihat |                                   |
+| S0       | Gambar terakhir selesai                          | 146 dtk                        |                  |                         |                                   |
+| S0       | Long task terlama saat memuat                    | **14.402 ms**            |                  |                         |                                   |
+| S1       | INP                                              | **64.302 ms**            |                  | <= 200 ms               |                                   |
+| S1       | Long task terlama                                | 41.983 ms                      |                  | <= 100 ms               |                                   |
+| S2       | INP                                              | 2.532 ms                       |                  | <= 200 ms               |                                   |
+| S2       | Ketukan -> tombol berubah                        | 1.159 ms                       |                  |                         |                                   |
+| S2       | Long task terlama                                | 1.534 ms                       |                  | <= 100 ms               |                                   |
+| S3       | Jumlah pesanan dari 3 ketukan                    | **3**                    |                  | 1                       |                                   |
+| S3       | Umpan balik pertama                              | tidak ada selama jendela ukur  |                  | pengguna tahu diproses  |                                   |
+| S3       | INP                                              | 2.634 ms                       |                  | <= 200 ms               |                                   |
+| S4       | INP                                              | **51.233 ms**            |                  | <= 200 ms               |                                   |
+| S4       | Langkah progres tergambar / frame selama progres | **0 / 0**                |                  | bertahap                |                                   |
+| S4       | Long task terlama                                | 30.390 ms                      |                  | <= 100 ms               |                                   |
+| S4       | Ketuk voucher sampai selesai                     | 51.163 ms                      |                  |                         |                                   |
+| S5       | Frame > 50 ms per 10 dtk                         | 0,9 *(lihat catatan)*        |                  | <= 2                    |                                   |
+| S5       | Waktu menggulir 14.000 px (seharusnya ±10 dtk)  | **32.433 ms**            |                  |                         |                                   |
+| S5       | Frame main thread per detik / frame terburuk     | **0,1 fps / 21.012 ms**  |                  |                         |                                   |
+| S5       | Long task terlama                                | 587 ms                         |                  | <= 100 ms               |                                   |
+| S6       | Frame > 50 ms per 10 dtk                         | 20                             |                  | <= 2                    |                                   |
+| S6       | Frame main thread per detik / frame terburuk     | 2,1 fps / 592 ms               |                  |                         |                                   |
+| S6       | Main thread sibuk, **tanpa** alat ukur     | 95,8%                          |                  | mendekati nol           |                                   |
+| S6       | Main thread sibuk, dengan alat ukur              | 96,8%                          |                  |                         | (sisa = loop rAF alat ukur, T-08) |
 
 ## 4. Temuan
 
@@ -51,11 +51,12 @@ Berikut Temuan yang kami Temukan:
 
 ### T-01: Seluruh 3000 kartu dibangun dalam satu task, disertai layout paksa (P-02, P-03, P-04, P-16)
 
-- **Tiket terkait:** TK-1041 dan Hampir seluruh Tiket karena mempengaruhi.
-- **Gejala bagi pengguna:** layar beku belasan detik setelah data tampil, dan setiap huruf membekukannya lagi.
-- **Bukti:** `g1`, satu task 14,4 detik setelah `/api/produk`. `g3`: huruf kedua (detik 0,2) baru diproses di detik
-  16,2, lalu huruf yang antre diproses dalam satu task 42 detik. Bottom-up S1: `get offsetHeight` 31,7 detik self.
-  `formatRupiah` 3000x: 646 ms, dibanding 3,5 ms bila pemformatnya disimpan.
+- **Tiket terkait:** TK-1041 (utama). Secara tidak langsung semua tiket, karena selama task ini halaman beku.
+- **Gejala bagi pengguna:** setelah data tampil layar beku belasan detik. Setiap huruf yang diketik di kolom cari membekukan layar lagi, dan huruf muncul terlambat.
+- **Bukti:** satu task 14,4 detik (median) setelah `/api/produk` diproses. `g3-S1-sebelum.png`:
+    huruf kedua yang diketik di detik 0,2 baru diproses di detik 16,2, lalu huruf-huruf yang antre diproses dalam satu
+    task 42 detik. Bottom-up S1: `get offsetHeight` 31,7 detik self. Micro-benchmark `formatRupiah` 3000x: 646 ms
+    (pemformat dibuat tiap panggilan) vs 3,5 ms (pemformat disimpan).
 - **Akar masalah dan mekanismenya:** `renderProduk` (`katalog.js`) membangun semua kartu dalam satu task makro, jadi
   tidak ada rendering opportunity dan input hanya antre. Biayanya linier terhadap N: `formatRupiah` (`util.js`)
   membuat `Intl.NumberFormat` baru per panggilan, `samakanTinggiJudul` menulis `style.height` dan membaca
@@ -67,8 +68,7 @@ Berikut Temuan yang kami Temukan:
 - **Trade-off:** Ctrl+F tidak menemukan kartu yang belum dirender (pencarian di kolom cari tetap mencakup 3000
   produk), dan judul lebih dari 3 baris (±1,7%) diberi elipsis. Virtualisasi penuh ditolak karena urusan fokus dan
   pembaca layar.
-- **Hasil:** long task saat memuat 14.402 → 720 ms; INP S1 64.302 → 96 ms; long task S1 41.983 ms → tidak ada
-  yang > 50 ms.
+- **Hasil:** long task saat memuat 14.402 → 500 ms; INP S1 64.302 → 152 ms; long task S1 41.983 → 77 ms.
 
 ### T-02: Voucher "async" tetap satu task panjang, dan 97% kerjanya sia-sia (P-11, P-12)
 
@@ -89,6 +89,7 @@ Berikut Temuan yang kami Temukan:
   selesai 51,2 → 1,2 detik; ketikan selama perhitungan tetap masuk.
 
 ### T-03: SDK analitik dijalankan di tengah interaksi dengan payload 1,2 MB (P-08)
+
 - **Tiket terkait:** TK-1044, TK-1052, TK-1041, TK-1063.
 - **Gejala bagi pengguna:** setiap ketukan dan huruf terasa berat.
 - **Bukti:** `Lacak.kirim` 28 ms per panggilan (sidik jari 2 juta iterasi dihitung ulang setiap kali), 332 ms dengan
@@ -103,6 +104,7 @@ Berikut Temuan yang kami Temukan:
 - **Hasil:** INP S2 424 → 128 ms dan INP S3 384 → 64 ms (P-07 → P-08, jendela ukur yang sama).
 
 ### T-04: 3000 gambar diminta sekaligus, tanpa ukuran, dan mahal di main thread (P-01, P-17)
+
 - **Tiket terkait:** TK-1081, TK-1063.
 - **Gejala bagi pengguna:** kotak abu-abu lama terisi, dan kuota cepat habis.
 - **Bukti:** S0 kode awal: 3000 permintaan sekaligus setelah kartu jadi, dan gambar terakhir selesai di detik 146
@@ -118,6 +120,7 @@ Berikut Temuan yang kami Temukan:
 - **Hasil:** 3.000 → 6 permintaan (3.228 → 6 KB); gambar terakhir 146 → 2,6 detik.
 
 ### T-05: "+ Keranjang" memberi umpan balik setelah riwayat 1,2 MB dibaca dan ditulis ulang (P-09)
+
 - **Tiket terkait:** TK-1044.
 - **Gejala bagi pengguna:** tombol tidak bereaksi, pengguna menekan lagi, dan isi keranjang bertambah dua-tiga kali.
 - **Bukti:** `g5`: ketukan menunggu task 1,5 detik, lalu task klik 636 ms (`bacaRiwayat`, SDK, `simpanRiwayat`);
@@ -132,6 +135,7 @@ Berikut Temuan yang kami Temukan:
 - **Hasil:** tombol berubah 1.159 → 68 ms; INP 2.532 → 80 ms.
 
 ### T-06: "Beli sekarang" tanpa penjaga permintaan ganda (P-10)
+
 - **Tiket terkait:** TK-1052.
 - **Gejala bagi pengguna:** tiga ketukan karena tidak ada reaksi menghasilkan tiga pesanan.
 - **Bukti:** S3 kode awal: 3 ketukan → **3 pesanan**, tanpa perubahan tombol selama jendela ukur.
@@ -144,6 +148,7 @@ Berikut Temuan yang kami Temukan:
 - **Hasil:** 3 → **1** pesanan; "Memproses…" 69 ms setelah ketukan; INP 2.634 → 32 ms.
 
 ### T-07: Gulir diblokir listener non-pasif dan pemeriksaan semua kartu (P-06, P-15, P-17)
+
 - **Tiket terkait:** TK-1063 (dan "tidak bisa scroll" di TK-1057).
 - **Gejala bagi pengguna:** gulir patah-patah dan tertinggal dari jari.
 - **Bukti:** `g9`: gulir 14.000 px butuh 32 detik (seharusnya ±10), dengan hanya 4 frame main thread dalam 32 detik
@@ -162,6 +167,7 @@ Berikut Temuan yang kami Temukan:
   ≤ 2 frame > 50 ms per 10 detik **belum tercapai** (6; ulangan 3-8).
 
 ### T-08: Timer 10 ms dan animasi yang memicu frame main thread terus-menerus (P-07, P-18)
+
 - **Tiket terkait:** TK-1070.
 - **Gejala bagi pengguna:** HP panas dan baterai cepat habis walau halaman hanya dibiarkan terbuka.
 - **Bukti:** `g11`: saat diam, setiap frame berisi Recalculate Style + Layout + Paint seluruh halaman (±270-360
@@ -184,6 +190,7 @@ Berikut Temuan yang kami Temukan:
   10 detik. Dengan alat ukur 39,1%, yang sisanya berasal dari loop rAF alat ukur.
 
 ### T-09: Konten disisipkan belakangan tanpa ruang yang dipesan (P-13)
+
 - **Tiket terkait:** TK-1078.
 - **Gejala bagi pengguna:** tombol melompat saat hendak diketuk, dan yang terketuk malah banner.
 - **Bukti:** pada kode awal CLS terukur 0, tetapi hanya karena banner **tidak pernah tampil** (lanjutan `fetch` kalah
@@ -201,6 +208,7 @@ Berikut Temuan yang kami Temukan:
 - **Hasil:** CLS 0,137 → **0** di semua ulangan P-13 sampai versi akhir.
 
 ### T-10: Mengetik mengulang kerja yang tidak perlu (P-05, P-14, P-16)
+
 - **Tiket terkait:** TK-1041.
 - **Gejala bagi pengguna:** setelah T-01 diperbaiki, huruf masih terasa tertunda.
 - **Bukti:** setiap perbaikan membuka biaya berikutnya. Setelah P-02, `normalkan` 389 ms self selama S1 (±32 ms per
